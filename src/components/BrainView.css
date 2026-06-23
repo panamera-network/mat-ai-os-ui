@@ -1,0 +1,132 @@
+.brain-view-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 16px 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.brain-view-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brain-view-toolbar h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.brain-view-actions {
+  display: flex;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.brain-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: radial-gradient(circle at 50% 50%, #14141e 0%, #0a0a0f 70%);
+  overflow: hidden;
+}
+
+.brain-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.brain-edge {
+  stroke: var(--border);
+  stroke-width: 0.3;
+  transition: stroke 0.4s, opacity 0.4s;
+}
+
+.brain-edge.skill-edge {
+  stroke-width: 0.18;
+  opacity: 0.5;
+}
+
+.brain-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.brain-node-dot {
+  border-radius: 50%;
+  background: var(--node-idle);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+
+.brain-node.core .brain-node-dot {
+  width: 36px;
+  height: 36px;
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid var(--accent-purple);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brain-node.core .brain-node-dot::before {
+  content: '👤';
+  font-size: 15px;
+}
+
+.brain-node.domain .brain-node-dot {
+  width: 14px;
+  height: 14px;
+}
+
+.brain-node.skill .brain-node-dot {
+  width: 7px;
+  height: 7px;
+  background: #50505e;
+}
+
+.brain-node.active .brain-node-dot {
+  background: var(--accent-purple);
+  box-shadow: 0 0 16px 4px var(--accent-purple-glow);
+}
+
+.brain-node-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.brain-node.core .brain-node-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.brain-node.skill .brain-node-label {
+  font-size: 9px;
+  color: #6e6e80;
+}
+
+.brain-node.active .brain-node-label {
+  color: var(--text-primary);
+}

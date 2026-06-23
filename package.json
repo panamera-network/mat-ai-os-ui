@@ -1,0 +1,43 @@
+{
+  "name": "mat-ai-os-ui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Desktop UI for MAT-AI-OS",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b tsconfig.app.json && vite build && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"vite\" \"npm:electron:start\"",
+    "electron:start": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.matai.os.ui",
+    "productName": "MAT.AI OS",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+:root {
+  --bg-app: #0a0a0f;
+  --bg-panel: #12121a;
+  --bg-card: #181822;
+  --border: #232330;
+  --text-primary: #e6e6f0;
+  --text-secondary: #8b8b9e;
+  --accent-purple: #8b5cf6;
+  --accent-purple-glow: rgba(139, 92, 246, 0.55);
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --accent-amber: #f59e0b;
+  --accent-blue: #3b82f6;
+  --node-idle: #4b4b5a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+#root {
+  min-width: 1200px;
+  min-height: 800px;
+}

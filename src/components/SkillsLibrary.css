@@ -1,0 +1,97 @@
+.skills-library {
+  flex: 0 0 auto;
+  min-height: 240px;
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.skills-library h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
+
+.skills-grid {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.domain-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+.domain-card:hover {
+  border-color: var(--domain-color);
+}
+
+.domain-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.domain-card-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--domain-color);
+  flex-shrink: 0;
+}
+
+.domain-card-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--domain-color);
+}
+
+.domain-card-more {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.domain-card-skills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.domain-card-skills li {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  position: relative;
+  padding-left: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.domain-card-skills li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--domain-color);
+}
