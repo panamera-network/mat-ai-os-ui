@@ -34,7 +34,7 @@ export default function SkillsLibrary() {
       return
     }
     const rect = el.getBoundingClientRect()
-    setOverlayPos({ left: rect.left, bottom: window.innerHeight - rect.top, width: rect.width })
+    setOverlayPos({ left: rect.left, bottom: window.innerHeight - rect.bottom, width: rect.width })
     setOverlayDomain(domain)
     setExpandedId(domain.id)
   }

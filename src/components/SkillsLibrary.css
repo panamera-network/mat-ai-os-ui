@@ -1,7 +1,7 @@
 .skills-library {
   flex: 0 0 auto;
   min-height: 240px;
-  margin: 10px 10px 0;
+  margin: 10px 5px 0;
   padding: 0 16px 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -45,7 +45,8 @@
 }
 
 .domain-card.expanded {
-  border-color: var(--domain-color);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .domain-expand-backdrop {
@@ -68,7 +69,6 @@
   box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.5);
   transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
   z-index: 60;
-  margin-bottom: 8px;
 }
 
 .domain-expand-overlay.open {
