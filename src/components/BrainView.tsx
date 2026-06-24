@@ -14,8 +14,21 @@ interface GraphNode extends PhysicsNode {
 }
 
 const CENTER = { x: 50, y: 50 }
-const DOMAIN_RADIUS = 30
-const SKILL_RADIUS = 10
+const MAX_RADIUS = 48
+const DOMAIN_RADIUS_MIN = 8
+const DOMAIN_RADIUS_MAX = 42
+const SKILL_RADIUS_MIN = 3
+const SKILL_RADIUS_MAX = 18
+
+/** Keeps the layout within the circular viewport instead of clipping at the square edges. */
+function clampToCircle(x: number, y: number, maxRadius = MAX_RADIUS): { x: number; y: number } {
+  const dx = x - CENTER.x
+  const dy = y - CENTER.y
+  const dist = Math.hypot(dx, dy)
+  if (dist <= maxRadius) return { x, y }
+  const scale = maxRadius / dist
+  return { x: CENTER.x + dx * scale, y: CENTER.y + dy * scale }
+}
 
 function buildGraph(): GraphNode[] {
   const nodes: GraphNode[] = [
@@ -23,9 +36,10 @@ function buildGraph(): GraphNode[] {
   ]
 
   DOMAINS.forEach((domain, i) => {
-    const angle = (i / DOMAINS.length) * Math.PI * 2 - Math.PI / 2
-    const dx = CENTER.x + Math.cos(angle) * DOMAIN_RADIUS
-    const dy = CENTER.y + Math.sin(angle) * DOMAIN_RADIUS * 0.85
+    const baseAngle = (i / DOMAINS.length) * Math.PI * 2 - Math.PI / 2
+    const angle = baseAngle + (Math.random() - 0.5) * 1.2
+    const radius = DOMAIN_RADIUS_MIN + Math.random() * (DOMAIN_RADIUS_MAX - DOMAIN_RADIUS_MIN)
+    const { x: dx, y: dy } = clampToCircle(CENTER.x + Math.cos(angle) * radius, CENTER.y + Math.sin(angle) * radius)
 
     nodes.push({
       id: domain.id,
@@ -36,10 +50,10 @@ function buildGraph(): GraphNode[] {
       homeY: dy,
     })
 
-    domain.skills.forEach((skill, j) => {
-      const skillAngle = angle + (j - (domain.skills.length - 1) / 2) * (Math.PI * 2 / domain.skills.length)
-      const sx = dx + Math.cos(skillAngle) * SKILL_RADIUS
-      const sy = dy + Math.sin(skillAngle) * SKILL_RADIUS * 0.85
+    domain.skills.forEach((skill) => {
+      const skillAngle = Math.random() * Math.PI * 2
+      const skillRadius = SKILL_RADIUS_MIN + Math.random() * (SKILL_RADIUS_MAX - SKILL_RADIUS_MIN)
+      const { x: sx, y: sy } = clampToCircle(dx + Math.cos(skillAngle) * skillRadius, dy + Math.sin(skillAngle) * skillRadius)
 
       nodes.push({
         id: `${domain.id}-${skill}`,
@@ -74,6 +88,7 @@ export default function BrainView() {
         </div>
       </div>
       <div className="brain-view">
+      <div className="brain-globe">
       <svg className="brain-edges" viewBox="0 0 100 100" preserveAspectRatio="none">
         {graph
           .filter((n) => n.kind === 'domain')
@@ -126,10 +141,12 @@ export default function BrainView() {
               className="brain-node-dot"
               style={active ? { background: n.color, boxShadow: `0 0 16px 4px ${n.color}88` } : undefined}
             />
-            <span className="brain-node-label">{n.label}</span>
+            {n.kind !== 'skill' && <span className="brain-node-label">{n.label}</span>}
+            {n.kind === 'skill' && <span className="brain-node-tooltip">{n.label}</span>}
           </div>
         )
       })}
+      </div>
       </div>
     </div>
   )

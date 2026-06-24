@@ -37,10 +37,24 @@
 }
 
 .brain-view {
-  position: relative;
   flex: 1;
   min-height: 0;
-  background: radial-gradient(circle at 50% 50%, #14141e 0%, #0a0a0f 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.brain-globe {
+  position: relative;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #1c1c2a 0%, #11111a 55%, #08080c 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.08), 0 0 40px rgba(139, 92, 246, 0.06) inset, 0 8px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
@@ -53,13 +67,14 @@
 
 .brain-edge {
   stroke: var(--border);
-  stroke-width: 0.3;
+  stroke-width: 0.2;
+  opacity: 0.6;
   transition: stroke 0.4s, opacity 0.4s;
 }
 
 .brain-edge.skill-edge {
-  stroke-width: 0.18;
-  opacity: 0.5;
+  stroke-width: 0.12;
+  opacity: 0.25;
 }
 
 .brain-node {
@@ -69,7 +84,11 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.brain-node.skill {
+  pointer-events: auto;
 }
 
 .brain-node-dot {
@@ -96,14 +115,18 @@
 }
 
 .brain-node.domain .brain-node-dot {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .brain-node.skill .brain-node-dot {
-  width: 7px;
-  height: 7px;
-  background: #50505e;
+  width: 4px;
+  height: 4px;
+  background: #4a4a56;
+}
+
+.brain-node.skill:hover .brain-node-dot {
+  background: var(--text-secondary);
 }
 
 .brain-node.active .brain-node-dot {
@@ -130,4 +153,28 @@
 
 .brain-node.active .brain-node-label {
   color: var(--text-primary);
+}
+
+.brain-node-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.brain-node.skill:hover .brain-node-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
