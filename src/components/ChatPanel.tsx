@@ -26,6 +26,8 @@ export default function ChatPanel() {
   const [input, setInput] = useState('')
   const [activeMode, setActiveMode] = useState('chat')
   const [pending, setPending] = useState(false)
+  const [modePickerOpen, setModePickerOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState<number | null>(null)
 
   const send = async () => {
     const task = input.trim()
@@ -52,34 +54,60 @@ export default function ChatPanel() {
     }
   }
 
+  const copyMessage = async (message: ChatMessage) => {
+    try {
+      await navigator.clipboard.writeText(message.text)
+      setCopiedId(message.id)
+      setTimeout(() => setCopiedId((current) => (current === message.id ? null : current)), 1500)
+    } catch {
+      // clipboard access denied — silently ignore
+    }
+  }
+
   return (
     <div className="panel-card chat-panel">
-      <h3>Interface</h3>
-      <div className="interface-grid">
-        {INTERFACE_MODES.map((mode) => (
-          <button
-            key={mode.id}
-            type="button"
-            className={`interface-btn ${activeMode === mode.id ? 'active' : ''}`}
-            onClick={() => setActiveMode(mode.id)}
-          >
-            <span className="interface-btn-icon">{mode.icon}</span>
-            {mode.label}
-          </button>
-        ))}
-      </div>
-
       <div className="chat-messages">
         {messages.length === 0 && <div className="empty-hint">Ask MAT.AI anything</div>}
         {messages.map((m) => (
           <div key={m.id} className={`chat-message ${m.role}`}>
             {m.text}
+            {m.role === 'orchestrator' && (
+              <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
+                {copiedId === m.id ? 'Copied!' : '📋'}
+              </button>
+            )}
           </div>
         ))}
         {pending && <div className="chat-message orchestrator pending">Thinking…</div>}
       </div>
 
       <div className="chat-input-row">
+        {modePickerOpen && (
+          <div className="mode-picker">
+            {INTERFACE_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                title={mode.label}
+                className={`interface-btn ${activeMode === mode.id ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveMode(mode.id)
+                  setModePickerOpen(false)
+                }}
+              >
+                <span className="interface-btn-icon">{mode.icon}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          className="mode-toggle-btn"
+          onClick={() => setModePickerOpen((open) => !open)}
+          aria-label="Choose interface mode"
+        >
+          +
+        </button>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

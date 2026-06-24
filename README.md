@@ -7,7 +7,7 @@ Desktop UI for **MAT-AI-OS** — a personal AI operating system. Built with Reac
 ## Features
 
 - **Brain View** — a live, physics-animated graph of domains and skills orbiting a central core node.
-- **Skills Library** — domain cards (Trading, Coding, Research, Business, Personal) listing top skills per domain.
+- **Skills Library** — domain cards (Trading, Coding, Research, Business, Personal, Legal, Creative, AI/Automation, Data & Analytics, Web3/Blockchain) listing top skills per domain — 141 skills across 10 domains.
 - **Core Engine** — status of the Memory, Skills, Agents, Loops, and Actions layers.
 - **Active Loops / Agent Operations** — live status of running automation loops and agents.
 - **Memory System** — Hot, Warm, Cold, and Archive memory tiers.
@@ -43,7 +43,8 @@ Packaged output is written to `release/`.
 src/
   components/   UI components (BrainView, SkillsLibrary, LeftPanel, RightPanel, ChatPanel, ...)
   data/         Domain and skill data
-  hooks/        Connection status, float physics, socket hooks
+  hooks/        Float physics, socket hooks
+  context/      BackendContext — health/agents polling + WebSocket state
   styles/       Global theme and layout
 electron/       Electron main + preload scripts
 ```
