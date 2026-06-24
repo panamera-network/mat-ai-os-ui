@@ -17,6 +17,18 @@
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.memory-tier-card:hover {
+  border-color: var(--tier-accent);
+  box-shadow: 0 0 10px -2px var(--tier-accent), 0 0 0 1px var(--tier-accent);
+}
+
+.memory-tier-card.active {
+  border-color: var(--tier-accent);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
 }
 
 .memory-tier-icon {
@@ -42,5 +54,45 @@
 
 .memory-tier-value {
   font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.memory-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: transparent;
+}
+
+.memory-popover {
+  position: fixed;
+  z-index: 60;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--tier-accent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.memory-popover-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.memory-popover-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-primary);
+  padding: 2px 0;
+}
+
+.memory-popover-note {
+  margin-top: 6px;
+  font-size: 10px;
+  font-style: italic;
   color: var(--text-secondary);
 }

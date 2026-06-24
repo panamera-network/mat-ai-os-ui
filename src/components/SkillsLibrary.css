@@ -29,12 +29,13 @@
 
 .domain-card {
   flex: 0 0 200px;
+  height: 180px;
   min-width: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
-  transition: border-color 0.2s, flex-basis 0.2s;
+  transition: border-color 0.2s;
   overflow: hidden;
   cursor: pointer;
 }
@@ -44,13 +45,47 @@
 }
 
 .domain-card.expanded {
-  flex: 0 0 260px;
+  border-color: var(--domain-color);
 }
 
-.domain-card.expanded .domain-card-skills {
-  max-height: 180px;
+.domain-expand-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: transparent;
+}
+
+.domain-expand-overlay {
+  position: fixed;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 14px;
+  box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.5);
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  z-index: 60;
+  margin-bottom: 8px;
+}
+
+.domain-expand-overlay.open {
+  max-height: 50vh;
+  opacity: 1;
   overflow-y: auto;
-  padding-right: 4px;
+  pointer-events: auto;
+  padding: 12px 14px;
+  border-color: var(--domain-color);
+}
+
+.domain-expand-overlay .domain-card-skills li {
+  white-space: normal;
+}
+
+.domain-expand-overlay .domain-card-toggle {
+  cursor: pointer;
 }
 
 .domain-card-toggle {
