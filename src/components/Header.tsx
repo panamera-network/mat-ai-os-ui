@@ -4,7 +4,7 @@ import './Header.css'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
-  const { online } = useBackend()
+  const { online, health } = useBackend()
   const status = online ? 'online' : 'offline'
 
   useEffect(() => {
@@ -24,6 +24,7 @@ export default function Header() {
           <span className="status-dot" />
           {status === 'online' ? 'Online' : 'Offline'}
         </div>
+        {health?.active_model && <div className="model-pill">{health.active_model.model}</div>}
         <div className="clock">
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>

@@ -215,31 +215,100 @@
   cursor: default;
 }
 
-.integration-status {
+.active-model-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--accent-purple);
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.active-model-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.active-model-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.model-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 10px 0 6px;
+}
+
+.model-row {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
 
-.integration-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-secondary);
+.model-row:hover:not(:disabled) {
+  border-color: var(--accent-purple);
 }
 
-.integration-status.connected {
-  color: var(--accent-green);
+.model-row:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
-.integration-status.connected .integration-dot {
-  background: var(--accent-green);
-  box-shadow: 0 0 6px var(--accent-green);
+.model-row.selected {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.12);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
 }
 
-.integration-status.disconnected {
+.model-row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.model-row-provider {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
+}
+
+.model-row-name {
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-row-size {
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.model-check {
+  color: var(--accent-purple);
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .delete-btn {

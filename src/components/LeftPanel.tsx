@@ -4,7 +4,7 @@ import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'actions'
+type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm'
 
 interface CoreLayer {
   id: LayerId
@@ -15,13 +15,12 @@ interface CoreLayer {
   badge?: 'live' | 'soon'
 }
 
-const STATIC_INTEGRATIONS = [
-  { id: 'mt5', label: 'MT5', connected: false },
-  { id: 'tradingview', label: 'TradingView', connected: false },
-  { id: 'telegram', label: 'Telegram', connected: false },
-  { id: 'email', label: 'Email', connected: false },
-  { id: 'api', label: 'API', connected: true },
-]
+function formatBytes(bytes?: number): string {
+  if (!bytes) return ''
+  const gb = bytes / 1024 ** 3
+  if (gb >= 1) return `${gb.toFixed(1)} GB`
+  return `${(bytes / 1024 ** 2).toFixed(0)} MB`
+}
 
 function MemoryExpand() {
   const { health, online } = useBackend()
@@ -290,18 +289,85 @@ function LoopsExpand() {
   )
 }
 
-function ActionsExpand() {
+function LLMExpand() {
+  const { models, refreshModels, refreshHealth } = useBackend()
+  const [selecting, setSelecting] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const active = models?.active
+  const isActive = (option: { provider: string; model: string }) =>
+    active?.provider === option.provider && active?.model === option.model
+
+  const selectModel = async (option: { provider: string; model: string }) => {
+    const key = `${option.provider}:${option.model}`
+    setSelecting(key)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/models/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(option),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed: ${res.status}`)
+      }
+      await Promise.all([refreshModels(), refreshHealth()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to switch model.')
+    } finally {
+      setSelecting(null)
+    }
+  }
+
   return (
     <div className="layer-expand-body">
-      {STATIC_INTEGRATIONS.map((integration) => (
-        <div className="kv-row" key={integration.id}>
-          <span>{integration.label}</span>
-          <span className={`integration-status ${integration.connected ? 'connected' : 'disconnected'}`}>
-            <span className="integration-dot" />
-            {integration.connected ? 'Connected' : 'Disconnected'}
+      <div className="active-model-banner">
+        <span className="active-model-label">Active model</span>
+        <span className="active-model-value">
+          {active ? `${active.provider} · ${active.model}` : '—'}
+        </span>
+      </div>
+
+      <div className="model-section-title">Online Models</div>
+      {(models?.online ?? []).map((option) => (
+        <button
+          key={`${option.provider}:${option.model}`}
+          type="button"
+          className={`model-row ${isActive(option) ? 'selected' : ''}`}
+          onClick={() => selectModel(option)}
+          disabled={selecting !== null}
+        >
+          <span className="model-row-text">
+            <span className="model-row-provider">{option.provider}</span>
+            <span className="model-row-name">{option.model}</span>
           </span>
-        </div>
+          {isActive(option) && <span className="model-check">✓</span>}
+        </button>
       ))}
+
+      <div className="model-section-title">Local Models</div>
+      {(models?.local ?? []).length === 0 && (
+        <div className="empty-hint">No local Ollama models found (is Ollama running on localhost:11434?)</div>
+      )}
+      {(models?.local ?? []).map((option) => (
+        <button
+          key={`${option.provider}:${option.model}`}
+          type="button"
+          className={`model-row ${isActive(option) ? 'selected' : ''}`}
+          onClick={() => selectModel(option)}
+          disabled={selecting !== null}
+        >
+          <span className="model-row-text">
+            <span className="model-row-provider">ollama</span>
+            <span className="model-row-name">{option.model}</span>
+          </span>
+          <span className="model-row-size">{formatBytes(option.size)}</span>
+          {isActive(option) && <span className="model-check">✓</span>}
+        </button>
+      ))}
+
+      {error && <div className="form-error">{error}</div>}
     </div>
   )
 }
@@ -311,7 +377,7 @@ const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   skills: 'Skills',
   agents: 'Agents',
   loops: 'Loops',
-  actions: 'Actions',
+  llm: 'LLM',
 }
 
 export default function LeftPanel() {
@@ -345,7 +411,14 @@ export default function LeftPanel() {
       icon: '🔁',
       color: 'rgba(245, 158, 11, 0.15)',
     },
-    { id: 'actions', label: 'Actions', status: 'Not available', icon: '🛠️', color: 'rgba(239, 68, 68, 0.15)', badge: 'soon' },
+    {
+      id: 'llm',
+      label: 'LLM',
+      status: health?.active_model ? `${health.active_model.provider} · ${health.active_model.model}` : '—',
+      icon: '🖥️',
+      color: 'rgba(6, 182, 212, 0.15)',
+      badge: 'live',
+    },
   ]
 
   const toggleLayer = (id: LayerId, el: HTMLElement) => {
@@ -399,7 +472,7 @@ export default function LeftPanel() {
                 {overlayLayer === 'skills' && <SkillsExpand />}
                 {overlayLayer === 'agents' && <AgentsExpand />}
                 {overlayLayer === 'loops' && <LoopsExpand />}
-                {overlayLayer === 'actions' && <ActionsExpand />}
+                {overlayLayer === 'llm' && <LLMExpand />}
               </div>
             </div>
           </>

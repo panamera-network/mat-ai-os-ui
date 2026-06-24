@@ -15,6 +15,7 @@
   letter-spacing: 0.08em;
   color: var(--text-secondary);
   margin: 0 0 10px;
+  margin-top: 5px;
 }
 
 .skills-grid {
