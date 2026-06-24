@@ -10,6 +10,9 @@ const DOMAIN_ICONS: Record<string, string> = {
   personal: '✅',
   legal: '⚖️',
   creative: '🎨',
+  ai_automation: '🤖',
+  data_analytics: '📊',
+  web3_blockchain: '⛓️',
 }
 
 export default function SkillsLibrary() {

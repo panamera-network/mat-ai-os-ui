@@ -19,12 +19,15 @@
 
 .skills-grid {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
   gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
 }
 
 .domain-card {
+  flex: 0 0 200px;
   min-width: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);

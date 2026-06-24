@@ -49,6 +49,24 @@ const CREATIVE_SKILLS = [
   'Thread Writing', 'Pitch Deck', 'Press Release', 'Podcast Outline', 'Storytelling',
 ]
 
+const AI_AUTOMATION_SKILLS = [
+  'Prompt Engineering', 'Model Evaluation', 'Agent Design', 'Workflow Automation', 'LangGraph Orchestration',
+  'RAG System', 'Fine-Tuning', 'Vector Database', 'AI Integration', 'Context Engineering',
+  'Tool Calling', 'Memory Design', 'AI Testing', 'Cost Optimization', 'AI Monitoring',
+]
+
+const DATA_ANALYTICS_SKILLS = [
+  'Data Visualization', 'SQL Queries', 'Python Data Analysis', 'Dashboard Building', 'Trading Analytics',
+  'Backtesting Analysis', 'Market Data Pipeline', 'Excel Automation', 'Statistical Analysis', 'Data Cleaning',
+  'KPI Tracking', 'Report Automation',
+]
+
+const WEB3_BLOCKCHAIN_SKILLS = [
+  'Smart Contract Dev', 'Tokenomics Design', 'DeFi Analysis', 'Wallet Management', 'NFT Strategy',
+  'DAO Setup', 'Blockchain Research', 'Web3 Integration', 'Crypto Tax', 'Audit Prep',
+  'Liquidity Analysis', 'Token Launch', 'Community Building', 'Whitepaper Dev', 'Fundraising Strategy',
+]
+
 export const DOMAINS: Domain[] = [
   { id: 'trading', label: 'Trading', color: '#8b5cf6', skills: TRADING_SKILLS, topSkills: TRADING_SKILLS.slice(0, 5), count: TRADING_SKILLS.length },
   { id: 'coding', label: 'Coding', color: '#14b8a6', skills: CODING_SKILLS, topSkills: CODING_SKILLS.slice(0, 5), count: CODING_SKILLS.length },
@@ -57,4 +75,7 @@ export const DOMAINS: Domain[] = [
   { id: 'personal', label: 'Personal', color: '#22c55e', skills: PERSONAL_SKILLS, topSkills: PERSONAL_SKILLS.slice(0, 5), count: PERSONAL_SKILLS.length },
   { id: 'legal', label: 'Legal', color: '#3b82f6', skills: LEGAL_SKILLS, topSkills: LEGAL_SKILLS.slice(0, 5), count: LEGAL_SKILLS.length },
   { id: 'creative', label: 'Creative', color: '#ec4899', skills: CREATIVE_SKILLS, topSkills: CREATIVE_SKILLS.slice(0, 5), count: CREATIVE_SKILLS.length },
+  { id: 'ai_automation', label: 'AI/Automation', color: '#8b5cf6', skills: AI_AUTOMATION_SKILLS, topSkills: AI_AUTOMATION_SKILLS.slice(0, 5), count: AI_AUTOMATION_SKILLS.length },
+  { id: 'data_analytics', label: 'Data & Analytics', color: '#06b6d4', skills: DATA_ANALYTICS_SKILLS, topSkills: DATA_ANALYTICS_SKILLS.slice(0, 5), count: DATA_ANALYTICS_SKILLS.length },
+  { id: 'web3_blockchain', label: 'Web3/Blockchain', color: '#f59e0b', skills: WEB3_BLOCKCHAIN_SKILLS, topSkills: WEB3_BLOCKCHAIN_SKILLS.slice(0, 5), count: WEB3_BLOCKCHAIN_SKILLS.length },
 ]
