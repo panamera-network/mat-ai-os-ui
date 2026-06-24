@@ -426,7 +426,9 @@ export default function LeftPanel() {
       setOverlayLayer(null)
       return
     }
-    setOverlayTop(el.getBoundingClientRect().top)
+    const maxOverlayHeight = window.innerHeight * 0.8
+    const maxTop = window.innerHeight - maxOverlayHeight - 16
+    setOverlayTop(Math.min(el.getBoundingClientRect().top, Math.max(maxTop, 0)))
     setOverlayLeft(asideRef.current?.getBoundingClientRect().right ?? 200)
     setOverlayLayer(id)
   }
