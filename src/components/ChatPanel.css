@@ -36,6 +36,84 @@
   font-style: italic;
 }
 
+.chat-message.governance {
+  font-size: 12px;
+}
+
+.chat-message.governance.rejected {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--accent-red);
+  color: #fca5a5;
+}
+
+.chat-message.governance.approved {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: var(--accent-green);
+  color: #86efac;
+}
+
+.chat-message.governance.discarded {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.chat-message.governance.suggestion {
+  border-color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.gov-card-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--accent-amber);
+}
+
+.gov-card-row {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.gov-card-reason {
+  margin-top: 6px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.gov-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.gov-approve-btn,
+.gov-reject-btn {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.gov-approve-btn {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--accent-green);
+  color: #86efac;
+}
+
+.gov-reject-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: var(--accent-red);
+  color: #fca5a5;
+}
+
+.gov-approve-btn:disabled,
+.gov-reject-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .chat-copy-btn {
   position: absolute;
   top: 4px;
