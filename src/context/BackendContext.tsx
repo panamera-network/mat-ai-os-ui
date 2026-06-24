@@ -10,6 +10,20 @@ export interface Agent {
   status: 'active' | 'idle'
 }
 
+export interface SkillSummary {
+  id: string
+  name: string
+  domain: string
+  description: string
+}
+
+export interface LoopInfo {
+  id?: string
+  name?: string
+  status?: string
+  [key: string]: unknown
+}
+
 export interface Health {
   status: string
   agents_count: number
@@ -30,20 +44,32 @@ interface BackendState {
   online: boolean
   health: Health | null
   agents: Agent[]
+  loops: LoopInfo[]
+  skillsByDomain: Record<string, SkillSummary[]>
   activeDomains: Set<string>
+  refreshAgents: () => Promise<void>
+  refreshSkills: () => Promise<void>
+  refreshHealth: () => Promise<void>
 }
 
 const BackendContext = createContext<BackendState>({
   online: false,
   health: null,
   agents: [],
+  loops: [],
+  skillsByDomain: {},
   activeDomains: new Set(),
+  refreshAgents: async () => {},
+  refreshSkills: async () => {},
+  refreshHealth: async () => {},
 })
 
 export function BackendProvider({ children }: { children: ReactNode }) {
   const [online, setOnline] = useState(false)
   const [health, setHealth] = useState<Health | null>(null)
   const [agents, setAgents] = useState<Agent[]>([])
+  const [loops, setLoops] = useState<LoopInfo[]>([])
+  const [skillsByDomain, setSkillsByDomain] = useState<Record<string, SkillSummary[]>>({})
   const [activeDomains, setActiveDomains] = useState<Set<string>>(new Set())
 
   const fetchHealth = useCallback(async () => {
@@ -65,15 +91,36 @@ export function BackendProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchLoops = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/loops`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) setLoops(await res.json())
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
+  const fetchSkills = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/skills`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) setSkillsByDomain(await res.json())
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
   useEffect(() => {
     fetchHealth()
     fetchAgents()
+    fetchLoops()
+    fetchSkills()
     const id = setInterval(() => {
       fetchHealth()
       fetchAgents()
+      fetchLoops()
     }, 5000)
     return () => clearInterval(id)
-  }, [fetchHealth, fetchAgents])
+  }, [fetchHealth, fetchAgents, fetchLoops, fetchSkills])
 
   const handleSocketMessage = useCallback(
     (data: unknown) => {
@@ -100,7 +147,21 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   useSocket(handleSocketMessage)
 
   return (
-    <BackendContext.Provider value={{ online, health, agents, activeDomains }}>{children}</BackendContext.Provider>
+    <BackendContext.Provider
+      value={{
+        online,
+        health,
+        agents,
+        loops,
+        skillsByDomain,
+        activeDomains,
+        refreshAgents: fetchAgents,
+        refreshSkills: fetchSkills,
+        refreshHealth: fetchHealth,
+      }}
+    >
+      {children}
+    </BackendContext.Provider>
   )
 }
 

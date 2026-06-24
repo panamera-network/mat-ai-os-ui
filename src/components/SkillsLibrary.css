@@ -33,12 +33,31 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, flex-basis 0.2s;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .domain-card:hover {
   border-color: var(--domain-color);
+}
+
+.domain-card.expanded {
+  flex: 0 0 260px;
+}
+
+.domain-card.expanded .domain-card-skills {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.domain-card-toggle {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--domain-color);
+  flex-shrink: 0;
 }
 
 .domain-card-header {
