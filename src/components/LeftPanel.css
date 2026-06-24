@@ -1,42 +1,74 @@
-.layer-buttons {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-bottom: 12px;
+.layer-panel-card {
+  position: relative;
 }
 
-.layer-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 2px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-secondary);
-  font-size: 10px;
+.layer-row-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  font-family: inherit;
   cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.layer-btn:hover {
+.layer-row-btn:hover {
   border-color: var(--accent-purple);
 }
 
-.layer-btn.active {
+.layer-row-btn.active {
   border-color: var(--accent-purple);
+  box-shadow: 0 0 0 1px var(--accent-purple), 0 0 14px rgba(139, 92, 246, 0.35);
+}
+
+.layer-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 40;
+}
+
+.layer-overlay {
+  position: fixed;
+  width: 280px;
+  margin-left: 10px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-purple);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(139, 92, 246, 0.2);
+  z-index: 50;
+}
+
+.layer-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.layer-overlay-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.layer-overlay-close:hover {
   color: var(--text-primary);
-  background: rgba(139, 92, 246, 0.14);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.35);
 }
 
-.layer-btn-icon {
-  font-size: 15px;
-}
-
-.layer-expand {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
+.layer-overlay-body {
+  padding: 14px;
 }
 
 .layer-expand-body {

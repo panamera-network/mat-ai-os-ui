@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
@@ -9,16 +9,11 @@ type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'actions'
 interface CoreLayer {
   id: LayerId
   label: string
+  status: string
   icon: string
+  color: string
+  badge?: 'live' | 'soon'
 }
-
-const LAYERS: CoreLayer[] = [
-  { id: 'memory', label: 'Memory', icon: '🧠' },
-  { id: 'skills', label: 'Skills', icon: '⚡' },
-  { id: 'agents', label: 'Agents', icon: '🤖' },
-  { id: 'loops', label: 'Loops', icon: '🔁' },
-  { id: 'actions', label: 'Actions', icon: '🛠️' },
-]
 
 const STATIC_INTEGRATIONS = [
   { id: 'mt5', label: 'MT5', connected: false },
@@ -254,11 +249,7 @@ function AgentsExpand() {
             {availableSkills.length === 0 && <div className="empty-hint">No skills loaded for this domain</div>}
             {availableSkills.map((skill) => (
               <label key={skill.id} className="skill-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedSkills.has(skill.id)}
-                  onChange={() => toggleSkill(skill.id)}
-                />
+                <input type="checkbox" checked={selectedSkills.has(skill.id)} onChange={() => toggleSkill(skill.id)} />
                 {skill.name}
               </label>
             ))}
@@ -315,37 +306,104 @@ function ActionsExpand() {
   )
 }
 
+const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
+  memory: 'Memory',
+  skills: 'Skills',
+  agents: 'Agents',
+  loops: 'Loops',
+  actions: 'Actions',
+}
+
 export default function LeftPanel() {
-  const { agents, loops } = useBackend()
-  const [activeLayer, setActiveLayer] = useState<LayerId>('memory')
+  const { health, online, agents, loops } = useBackend()
+  const [overlayLayer, setOverlayLayer] = useState<LayerId | null>(null)
+  const [overlayTop, setOverlayTop] = useState(0)
+  const [overlayLeft, setOverlayLeft] = useState(0)
+  const asideRef = useRef<HTMLElement>(null)
+
+  const layers: CoreLayer[] = [
+    { id: 'memory', label: 'Memory', status: online ? 'Connected' : 'Idle', icon: '🧠', color: 'rgba(139, 92, 246, 0.15)' },
+    {
+      id: 'skills',
+      label: 'Skills',
+      status: health ? `${health.skills_count} loaded` : '—',
+      icon: '⚡',
+      color: 'rgba(59, 130, 246, 0.15)',
+    },
+    {
+      id: 'agents',
+      label: 'Agents',
+      status: health ? `${health.active_agents_count} active / ${health.agents_count} total` : 'Idle',
+      icon: '🤖',
+      color: 'rgba(34, 197, 94, 0.15)',
+      badge: 'live',
+    },
+    {
+      id: 'loops',
+      label: 'Loops',
+      status: loops.length > 0 ? `${loops.length} running` : 'None active',
+      icon: '🔁',
+      color: 'rgba(245, 158, 11, 0.15)',
+    },
+    { id: 'actions', label: 'Actions', status: 'Not available', icon: '🛠️', color: 'rgba(239, 68, 68, 0.15)', badge: 'soon' },
+  ]
+
+  const toggleLayer = (id: LayerId, el: HTMLElement) => {
+    if (overlayLayer === id) {
+      setOverlayLayer(null)
+      return
+    }
+    setOverlayTop(el.getBoundingClientRect().top)
+    setOverlayLeft(asideRef.current?.getBoundingClientRect().right ?? 200)
+    setOverlayLayer(id)
+  }
 
   const activeAgents = agents.filter((a) => a.status === 'active')
 
   return (
-    <aside className="left-panel">
-      <div className="panel-card">
+    <aside className="left-panel" ref={asideRef}>
+      <div className="panel-card layer-panel-card">
         <h3>Core Engine</h3>
-        <div className="layer-buttons">
-          {LAYERS.map((layer) => (
-            <button
-              key={layer.id}
-              type="button"
-              className={`layer-btn ${activeLayer === layer.id ? 'active' : ''}`}
-              onClick={() => setActiveLayer(layer.id)}
-            >
-              <span className="layer-btn-icon">{layer.icon}</span>
-              {layer.label}
-            </button>
-          ))}
-        </div>
+        {layers.map((layer) => (
+          <button
+            key={layer.id}
+            type="button"
+            className={`core-layer-row layer-row-btn ${overlayLayer === layer.id ? 'active' : ''}`}
+            onClick={(e) => toggleLayer(layer.id, e.currentTarget)}
+          >
+            <span className="core-layer-icon" style={{ background: layer.color }}>
+              {layer.icon}
+            </span>
+            <div className="core-layer-text">
+              <div className="core-layer-top">
+                <span className="core-layer-label">{layer.label}</span>
+                {layer.badge && <span className={`core-layer-badge ${layer.badge}`}>{layer.badge}</span>}
+              </div>
+              <span className="core-layer-status">{layer.status}</span>
+            </div>
+          </button>
+        ))}
 
-        <div className="layer-expand">
-          {activeLayer === 'memory' && <MemoryExpand />}
-          {activeLayer === 'skills' && <SkillsExpand />}
-          {activeLayer === 'agents' && <AgentsExpand />}
-          {activeLayer === 'loops' && <LoopsExpand />}
-          {activeLayer === 'actions' && <ActionsExpand />}
-        </div>
+        {overlayLayer && (
+          <>
+            <div className="layer-overlay-backdrop" onClick={() => setOverlayLayer(null)} />
+            <div className="layer-overlay" style={{ top: overlayTop, left: overlayLeft }}>
+              <div className="layer-overlay-header">
+                <span>{LAYER_OVERLAY_TITLE[overlayLayer]}</span>
+                <button type="button" className="layer-overlay-close" onClick={() => setOverlayLayer(null)} aria-label="Close">
+                  ×
+                </button>
+              </div>
+              <div className="layer-overlay-body">
+                {overlayLayer === 'memory' && <MemoryExpand />}
+                {overlayLayer === 'skills' && <SkillsExpand />}
+                {overlayLayer === 'agents' && <AgentsExpand />}
+                {overlayLayer === 'loops' && <LoopsExpand />}
+                {overlayLayer === 'actions' && <ActionsExpand />}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="panel-card">
