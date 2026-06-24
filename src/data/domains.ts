@@ -37,10 +37,24 @@ const PERSONAL_SKILLS = [
   'Budget Planner', 'Travel Planner', 'Meal Planner', 'Sleep Analyzer', 'Goal Tracker',
 ]
 
+const LEGAL_SKILLS = [
+  'Token Compliance', 'Smart Contract Audit', 'KYC/AML Check', 'Securities Law', 'Tokenomics Legal Review',
+  'DAO Governance', 'Privacy Policy', 'Terms of Service', 'IP Protection', 'Business Registration',
+  'Contract Drafting', 'Dispute Resolution', 'Tax Advisory', 'Regulatory Scan', 'Compliance Report',
+]
+
+const CREATIVE_SKILLS = [
+  'Content Strategy', 'Scriptwriting', 'Copywriting', 'Social Media', 'Whitepaper Writing',
+  'Community Content', 'Newsletter', 'SEO Content', 'Video Concept', 'Brand Voice',
+  'Thread Writing', 'Pitch Deck', 'Press Release', 'Podcast Outline', 'Storytelling',
+]
+
 export const DOMAINS: Domain[] = [
   { id: 'trading', label: 'Trading', color: '#8b5cf6', skills: TRADING_SKILLS, topSkills: TRADING_SKILLS.slice(0, 5), count: TRADING_SKILLS.length },
   { id: 'coding', label: 'Coding', color: '#14b8a6', skills: CODING_SKILLS, topSkills: CODING_SKILLS.slice(0, 5), count: CODING_SKILLS.length },
   { id: 'research', label: 'Research', color: '#f59e0b', skills: RESEARCH_SKILLS, topSkills: RESEARCH_SKILLS.slice(0, 5), count: RESEARCH_SKILLS.length },
   { id: 'business', label: 'Business', color: '#fb7185', skills: BUSINESS_SKILLS, topSkills: BUSINESS_SKILLS.slice(0, 5), count: BUSINESS_SKILLS.length },
   { id: 'personal', label: 'Personal', color: '#22c55e', skills: PERSONAL_SKILLS, topSkills: PERSONAL_SKILLS.slice(0, 5), count: PERSONAL_SKILLS.length },
+  { id: 'legal', label: 'Legal', color: '#3b82f6', skills: LEGAL_SKILLS, topSkills: LEGAL_SKILLS.slice(0, 5), count: LEGAL_SKILLS.length },
+  { id: 'creative', label: 'Creative', color: '#ec4899', skills: CREATIVE_SKILLS, topSkills: CREATIVE_SKILLS.slice(0, 5), count: CREATIVE_SKILLS.length },
 ]

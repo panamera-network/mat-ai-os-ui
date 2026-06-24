@@ -8,6 +8,8 @@ const DOMAIN_ICONS: Record<string, string> = {
   research: '🔬',
   business: '📋',
   personal: '✅',
+  legal: '⚖️',
+  creative: '🎨',
 }
 
 export default function SkillsLibrary() {
