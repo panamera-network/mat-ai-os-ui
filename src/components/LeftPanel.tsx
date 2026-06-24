@@ -22,6 +22,134 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / 1024 ** 2).toFixed(0)} MB`
 }
 
+function SoulPromptSection() {
+  const { soul, refreshSoul } = useBackend()
+  const [draft, setDraft] = useState(soul?.soul_prompt ?? '')
+  const [touched, setTouched] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  if (!touched && soul && draft !== soul.soul_prompt) {
+    setDraft(soul.soul_prompt)
+  }
+
+  const save = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/soul/prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: draft }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed: ${res.status}`)
+      }
+      await refreshSoul()
+      setTouched(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save soul prompt.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="soul-section">
+      <div className="model-section-title">Soul Prompt</div>
+      <textarea
+        className="soul-textarea"
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setTouched(true)
+        }}
+        placeholder="Base personality prompt..."
+      />
+      {error && <div className="form-error">{error}</div>}
+      <button type="button" className="expand-action-btn solid" onClick={save} disabled={saving}>
+        {saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}
+      </button>
+    </div>
+  )
+}
+
+const STYLE_MODES: { id: string; label: string }[] = [
+  { id: 'casual', label: 'Casual' },
+  { id: 'technical', label: 'Technical' },
+  { id: 'analytical', label: 'Analytical' },
+]
+
+function ResponseStylesSection() {
+  const { soul, refreshSoul } = useBackend()
+  const [activeTab, setActiveTab] = useState('casual')
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  const currentDraft = drafts[activeTab] ?? soul?.response_styles[activeTab] ?? ''
+
+  const setDraft = (value: string) => {
+    setDrafts((prev) => ({ ...prev, [activeTab]: value }))
+  }
+
+  const save = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/soul/style/${activeTab}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ style: currentDraft }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed: ${res.status}`)
+      }
+      await refreshSoul()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save response style.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="soul-section">
+      <div className="model-section-title">Response Styles</div>
+      <div className="style-tabs">
+        {STYLE_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            className={`style-tab ${activeTab === mode.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(mode.id)}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+      <textarea
+        className="soul-textarea"
+        value={currentDraft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder={`${activeTab} response style...`}
+      />
+      {error && <div className="form-error">{error}</div>}
+      <button type="button" className="expand-action-btn solid" onClick={save} disabled={saving}>
+        {saving ? 'Saving…' : saved ? 'Saved!' : 'Save'}
+      </button>
+    </div>
+  )
+}
+
 function MemoryExpand() {
   const { health, online } = useBackend()
   return (
@@ -47,6 +175,9 @@ function MemoryExpand() {
           <span className="stat-label">Domains</span>
         </div>
       </div>
+
+      <SoulPromptSection />
+      <ResponseStylesSection />
     </div>
   )
 }

@@ -135,6 +135,71 @@
   cursor: default;
 }
 
+.expand-action-btn.solid {
+  width: 100%;
+  border: 1px solid var(--accent-purple);
+  background: var(--accent-purple);
+  color: #fff;
+  font-weight: 600;
+}
+
+.expand-action-btn.solid:hover:not(:disabled) {
+  color: #fff;
+  opacity: 0.9;
+}
+
+.soul-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.soul-textarea {
+  width: 100%;
+  min-height: 90px;
+  margin-bottom: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 8px;
+  font-size: 11px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.soul-textarea:focus {
+  border-color: var(--accent-purple);
+}
+
+.style-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.style-tab {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.style-tab:hover {
+  border-color: var(--accent-purple);
+}
+
+.style-tab.active {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.14);
+  color: var(--text-primary);
+}
+
 .inline-form {
   display: flex;
   flex-direction: column;
