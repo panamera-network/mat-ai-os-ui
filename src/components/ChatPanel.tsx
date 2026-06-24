@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE_URL } from '../config'
 import './ChatPanel.css'
 
 interface ChatMessage {
@@ -24,11 +25,31 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [activeMode, setActiveMode] = useState('chat')
+  const [pending, setPending] = useState(false)
 
-  const send = () => {
-    if (!input.trim()) return
-    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: input.trim() }])
+  const send = async () => {
+    const task = input.trim()
+    if (!task || pending) return
+    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task }])
     setInput('')
+    setPending(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task }),
+      })
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+      const data: { result: string } = await res.json()
+      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'orchestrator', text: data.result }])
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: 'orchestrator', text: 'Could not reach the Orchestrator. Is the backend running?' },
+      ])
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -55,6 +76,7 @@ export default function ChatPanel() {
             {m.text}
           </div>
         ))}
+        {pending && <div className="chat-message orchestrator pending">Thinking…</div>}
       </div>
 
       <div className="chat-input-row">
@@ -63,8 +85,11 @@ export default function ChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="Ask MAT.AI anything..."
+          disabled={pending}
         />
-        <button onClick={send}>➤</button>
+        <button onClick={send} disabled={pending}>
+          ➤
+        </button>
       </div>
     </div>
   )

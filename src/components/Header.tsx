@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useConnectionStatus } from '../hooks/useConnectionStatus'
+import { useBackend } from '../context/BackendContext'
 import './Header.css'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
-  const status = useConnectionStatus()
+  const { online } = useBackend()
+  const status = online ? 'online' : 'offline'
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)

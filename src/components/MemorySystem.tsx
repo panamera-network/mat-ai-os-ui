@@ -1,3 +1,4 @@
+import { useBackend } from '../context/BackendContext'
 import './MemorySystem.css'
 
 interface MemoryTier {
@@ -16,9 +17,16 @@ const MEMORY_TIERS: MemoryTier[] = [
 ]
 
 export default function MemorySystem() {
+  const { health, online } = useBackend()
+
   return (
     <div className="panel-card">
       <h3>Memory System</h3>
+      <div className="memory-summary">
+        {online && health
+          ? `${health.agents_count} agent${health.agents_count === 1 ? '' : 's'} · ${health.skills_count} skills · ${health.domains_count} domains`
+          : 'Backend offline'}
+      </div>
       <div className="memory-grid">
         {MEMORY_TIERS.map((tier) => (
           <div className="memory-tier-card" key={tier.id}>

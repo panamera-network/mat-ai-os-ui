@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { DOMAINS } from '../data/domains'
+import { useBackend } from '../context/BackendContext'
 import { useFloatPhysics, type PhysicsNode } from '../hooks/useFloatPhysics'
 import './BrainView.css'
 
@@ -58,19 +59,7 @@ function buildGraph(): GraphNode[] {
 export default function BrainView() {
   const graph = useMemo(buildGraph, [])
   const positions = useFloatPhysics(graph)
-  const [activeId, setActiveId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      const candidates = graph.filter((n) => n.kind !== 'core')
-      const pick = candidates[Math.floor(Math.random() * candidates.length)]
-      setActiveId(pick.id)
-    }, 2600)
-    return () => clearInterval(id)
-  }, [graph])
-
-  const activeNode = graph.find((n) => n.id === activeId)
-  const activeDomainId = activeNode?.kind === 'skill' ? activeNode.parentId : activeNode?.id
+  const { activeDomains } = useBackend()
 
   const pos = (id: string, fallback: { x: number; y: number }) => positions[id] ?? fallback
 
@@ -91,7 +80,7 @@ export default function BrainView() {
           .map((n) => {
             const a = pos('core', CENTER)
             const b = pos(n.id, { x: n.homeX, y: n.homeY })
-            const active = n.id === activeDomainId
+            const active = activeDomains.has(n.id)
             return (
               <line
                 key={n.id}
@@ -109,7 +98,7 @@ export default function BrainView() {
           .map((n) => {
             const a = pos(n.parentId!, CENTER)
             const b = pos(n.id, { x: n.homeX, y: n.homeY })
-            const active = n.id === activeId
+            const active = activeDomains.has(n.parentId!)
             return (
               <line
                 key={n.id}
@@ -126,7 +115,7 @@ export default function BrainView() {
 
       {graph.map((n) => {
         const p = pos(n.id, { x: n.homeX, y: n.homeY })
-        const active = n.id === activeId || (n.kind === 'domain' && n.id === activeDomainId)
+        const active = n.kind === 'domain' && activeDomains.has(n.id)
         return (
           <div
             key={n.id}
