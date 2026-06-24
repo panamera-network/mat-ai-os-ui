@@ -26,9 +26,9 @@ interface PhysicsState {
   vy: number
 }
 
-const DEFAULT_SPRING = 0.004
-const DEFAULT_DAMPING = 0.965
-const DEFAULT_JITTER = 0.4
+const DEFAULT_SPRING = 0.002
+const DEFAULT_DAMPING = 0.97
+const DEFAULT_JITTER = 0.12
 const BOUNDARY_SPRING = 0.05
 
 export function useFloatPhysics(nodes: PhysicsNode[], options: PhysicsOptions = {}) {

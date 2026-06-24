@@ -63,14 +63,14 @@
 
 .brain-edge {
   stroke: var(--border);
-  stroke-width: 0.6;
-  opacity: 0.6;
-  transition: stroke 0.4s, opacity 0.4s;
+  stroke-width: 0.8;
+  opacity: 0.25;
+  transition: stroke 0.4s, opacity 0.4s, stroke-width 0.4s;
 }
 
 .brain-edge.skill-edge {
-  stroke-width: 0.4;
-  opacity: 0.25;
+  stroke-width: 0.5;
+  opacity: 0.15;
 }
 
 .brain-node {
@@ -91,15 +91,15 @@
 }
 
 .brain-node.core .brain-node-dot {
-  width: 8px;
-  height: 8px;
+  width: 13px;
+  height: 13px;
   background: var(--accent-purple);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 0 12px 3px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25), 0 0 16px 4px rgba(139, 92, 246, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 6px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
 }

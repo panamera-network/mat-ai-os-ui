@@ -68,7 +68,7 @@ export default function BrainView() {
 
   const { nodes: graph, boundary } = useMemo(() => buildGraph(width, height), [width, height])
   const nodeById = useMemo(() => new Map(graph.map((n) => [n.id, n])), [graph])
-  const jitter = Math.max(width, 1) * 0.0007
+  const jitter = Math.max(width, 1) * 0.00021
   const positions = useFloatPhysics(graph, { jitter, boundary })
 
   const pos = (id: string): { x: number; y: number } => {
@@ -124,7 +124,7 @@ export default function BrainView() {
                     x2={b.x}
                     y2={b.y}
                     className="brain-edge"
-                    style={active ? { stroke: n.color, opacity: 0.8 } : undefined}
+                    style={active ? { stroke: n.color, opacity: 0.7, strokeWidth: 1.2 } : undefined}
                   />
                 )
               })}
@@ -142,7 +142,7 @@ export default function BrainView() {
                     x2={b.x}
                     y2={b.y}
                     className="brain-edge skill-edge"
-                    style={active ? { stroke: n.color, opacity: 0.7 } : undefined}
+                    style={active ? { stroke: n.color, opacity: 0.7, strokeWidth: 1.2 } : undefined}
                   />
                 )
               })}
