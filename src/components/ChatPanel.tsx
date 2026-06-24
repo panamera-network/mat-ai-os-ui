@@ -166,7 +166,7 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="panel-card chat-panel">
+    <div className="chat-panel-card chat-panel">
       <div className="chat-messages">
         {messages.length === 0 && <div className="empty-hint">Ask MAT.AI anything</div>}
         {messages.map((m) => {
@@ -229,7 +229,6 @@ export default function ChatPanel() {
               <button
                 key={mode.id}
                 type="button"
-                title={mode.label}
                 className={`interface-btn ${activeMode === mode.id ? 'active' : ''}`}
                 onClick={() => {
                   setActiveMode(mode.id)
@@ -237,6 +236,7 @@ export default function ChatPanel() {
                 }}
               >
                 <span className="interface-btn-icon">{mode.icon}</span>
+                <span className="interface-btn-label">{mode.label}</span>
               </button>
             ))}
           </div>

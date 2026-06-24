@@ -15,6 +15,8 @@ export interface SkillSummary {
   name: string
   domain: string
   description: string
+  source?: string
+  auto_generated?: boolean
 }
 
 export interface LoopInfo {

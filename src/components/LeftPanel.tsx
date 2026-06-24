@@ -4,7 +4,7 @@ import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm'
+type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance'
 
 interface CoreLayer {
   id: LayerId
@@ -503,12 +503,44 @@ function LLMExpand() {
   )
 }
 
+function GovernanceExpand() {
+  const { skillsByDomain } = useBackend()
+  const allSkills = Object.values(skillsByDomain).flat()
+  const learnedCount = allSkills.filter((s) => s.source && s.source !== 'manual_add').length
+
+  return (
+    <div className="layer-expand-body">
+      <div className="kv-row">
+        <span>Security check</span>
+        <span className="status-active">● Active</span>
+      </div>
+      <div className="kv-row">
+        <span>Quality check</span>
+        <span className="status-active">● Active</span>
+      </div>
+      <div className="kv-row">
+        <span>Relevance check</span>
+        <span className="status-active">● Active</span>
+      </div>
+      <div className="kv-row">
+        <span>Learned skills</span>
+        <span className="value-muted">{learnedCount}</span>
+      </div>
+      <div className="kv-row">
+        <span>Rejected (total)</span>
+        <span className="value-muted">Not tracked yet</span>
+      </div>
+    </div>
+  )
+}
+
 const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   memory: 'Memory',
   skills: 'Skills',
   agents: 'Agents',
   loops: 'Loops',
   llm: 'LLM',
+  governance: 'Governance',
 }
 
 export default function LeftPanel() {
@@ -548,6 +580,14 @@ export default function LeftPanel() {
       status: health?.active_model ? `${health.active_model.provider} · ${health.active_model.model}` : '—',
       icon: '🖥️',
       color: 'rgba(6, 182, 212, 0.15)',
+      badge: 'live',
+    },
+    {
+      id: 'governance',
+      label: 'Governance',
+      status: 'Active',
+      icon: '🛡️',
+      color: 'rgba(139, 92, 246, 0.15)',
       badge: 'live',
     },
   ]
@@ -606,6 +646,7 @@ export default function LeftPanel() {
                 {overlayLayer === 'agents' && <AgentsExpand />}
                 {overlayLayer === 'loops' && <LoopsExpand />}
                 {overlayLayer === 'llm' && <LLMExpand />}
+                {overlayLayer === 'governance' && <GovernanceExpand />}
               </div>
             </div>
           </>
