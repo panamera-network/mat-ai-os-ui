@@ -20,10 +20,18 @@ export interface SkillSummary {
 }
 
 export interface LoopInfo {
-  id?: string
-  name?: string
-  status?: string
-  [key: string]: unknown
+  id: string
+  name: string
+  description: string
+  trigger: 'cron' | 'interval' | 'event' | string
+  schedule: string
+  task: string
+  domain: string | null
+  status: 'active' | 'paused' | string
+  last_run: string | null
+  next_run: string | null
+  run_count: number
+  created_at: string
 }
 
 export interface ModelOption {
@@ -111,6 +119,7 @@ interface BackendState {
   refreshSkills: () => Promise<void>
   refreshHealth: () => Promise<void>
   refreshModels: () => Promise<void>
+  refreshLoops: () => Promise<void>
   refreshSoul: () => Promise<void>
   refreshMemoryTiers: () => Promise<void>
   refreshSuggestions: () => Promise<void>
@@ -142,6 +151,7 @@ const BackendContext = createContext<BackendState>({
   refreshSkills: async () => {},
   refreshHealth: async () => {},
   refreshModels: async () => {},
+  refreshLoops: async () => {},
   refreshSoul: async () => {},
   refreshMemoryTiers: async () => {},
   refreshSuggestions: async () => {},
@@ -357,6 +367,7 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         refreshSkills: fetchSkills,
         refreshHealth: fetchHealth,
         refreshModels: fetchModels,
+        refreshLoops: fetchLoops,
         refreshSoul: fetchSoul,
         refreshMemoryTiers: fetchMemoryTiers,
         refreshSuggestions: fetchSuggestions,

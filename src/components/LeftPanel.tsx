@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
@@ -399,29 +399,378 @@ function AgentsExpand() {
   )
 }
 
+function formatLoopTime(iso: string | null): string {
+  if (!iso) return '—'
+  try {
+    return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return iso
+  }
+}
+
+const TRIGGER_TYPES = ['interval', 'cron'] as const
+
 function LoopsExpand() {
-  const { loops } = useBackend()
+  const { loops, refreshLoops } = useBackend()
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '',
+    task: '',
+    trigger: 'interval' as (typeof TRIGGER_TYPES)[number],
+    schedule: '',
+    domain: '',
+  })
+
+  const togglePause = async (loop: (typeof loops)[number]) => {
+    setBusyId(loop.id)
+    try {
+      await fetch(`${API_BASE_URL}/loops/${loop.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: loop.status === 'active' ? 'paused' : 'active' }),
+      })
+      await refreshLoops()
+    } catch {
+      // best-effort — next poll will reconcile
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const deleteLoop = async (loopId: string) => {
+    setBusyId(loopId)
+    try {
+      await fetch(`${API_BASE_URL}/loops/${loopId}`, { method: 'DELETE' })
+      await refreshLoops()
+    } catch {
+      // best-effort — next poll will reconcile
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const runNow = async (loopId: string) => {
+    setBusyId(loopId)
+    try {
+      await fetch(`${API_BASE_URL}/loops/${loopId}/run`, { method: 'POST' })
+      await refreshLoops()
+    } catch {
+      // best-effort — next poll will reconcile
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const submit = async () => {
+    if (!form.name.trim() || !form.task.trim() || !form.schedule.trim()) {
+      setError('Name, task, and schedule are required.')
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/loops`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          task: form.task,
+          trigger: form.trigger,
+          schedule: form.schedule,
+          domain: form.domain || null,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed: ${res.status}`)
+      }
+      await refreshLoops()
+      setForm({ name: '', task: '', trigger: 'interval', schedule: '', domain: '' })
+      setFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create loop.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="layer-expand-body">
       {loops.length === 0 ? (
-        <div className="empty-hint">No active loops</div>
+        <div className="empty-hint">No loops yet</div>
       ) : (
-        loops.map((loop, i) => (
-          <div className="kv-row" key={loop.id ?? i}>
-            <span>{loop.name ?? loop.id ?? `Loop ${i + 1}`}</span>
-            <span className="value-muted">{loop.status ?? '—'}</span>
+        loops.map((loop) => (
+          <div className="loop-card" key={loop.id}>
+            <div className="loop-card-top">
+              <span className="loop-card-name">{loop.name}</span>
+              <span className={`loop-status-badge status-${loop.status}`}>{loop.status}</span>
+            </div>
+            <div className="loop-card-task">{loop.task}</div>
+            <div className="loop-card-meta">
+              <span>Last run: {formatLoopTime(loop.last_run)}</span>
+              <span>Runs: {loop.run_count}</span>
+              <span>Next: {loop.status === 'active' ? formatLoopTime(loop.next_run) : '—'}</span>
+            </div>
+            <div className="loop-card-actions">
+              <button type="button" disabled={busyId === loop.id} onClick={() => togglePause(loop)}>
+                {loop.status === 'active' ? 'Pause' : 'Resume'}
+              </button>
+              <button type="button" onClick={() => runNow(loop.id)} disabled={busyId === loop.id}>
+                Run now
+              </button>
+              <button
+                type="button"
+                className="delete-btn"
+                onClick={() => deleteLoop(loop.id)}
+                disabled={busyId === loop.id}
+                aria-label="Delete loop"
+              >
+                🗑
+              </button>
+            </div>
           </div>
         ))
       )}
-      <button type="button" className="expand-action-btn" disabled title="Coming soon">
-        + Create Loop (Coming Soon)
-      </button>
+
+      {!formOpen && (
+        <button type="button" className="expand-action-btn" onClick={() => setFormOpen(true)}>
+          + Create Loop
+        </button>
+      )}
+
+      {formOpen && (
+        <div className="inline-form">
+          <input placeholder="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <textarea
+            placeholder="task to send the Orchestrator"
+            value={form.task}
+            onChange={(e) => setForm({ ...form, task: e.target.value })}
+          />
+          <select value={form.trigger} onChange={(e) => setForm({ ...form, trigger: e.target.value as typeof form.trigger })}>
+            {TRIGGER_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder={form.trigger === 'cron' ? 'cron string, e.g. */5 * * * *' : 'interval seconds, e.g. 3600'}
+            value={form.schedule}
+            onChange={(e) => setForm({ ...form, schedule: e.target.value })}
+          />
+          <select value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })}>
+            <option value="">No domain</option>
+            {DOMAINS.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.id}
+              </option>
+            ))}
+          </select>
+          {error && <div className="form-error">{error}</div>}
+          <div className="inline-form-actions">
+            <button type="button" onClick={submit} disabled={submitting}>
+              {submitting ? 'Creating…' : 'Create'}
+            </button>
+            <button type="button" className="ghost" onClick={() => setFormOpen(false)} disabled={submitting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface McpServer {
+  name: string
+  url: string
+  description: string
+  registered_at: string
+}
+
+interface McpTool {
+  name: string
+  description: string
+  [key: string]: unknown
+}
+
+function McpExpand() {
+  const [servers, setServers] = useState<McpServer[]>([])
+  const [toolCounts, setToolCounts] = useState<Record<string, number>>({})
+  const [tools, setTools] = useState<Record<string, McpTool[]>>({})
+  const [expandedServer, setExpandedServer] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busyName, setBusyName] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: '', url: '', description: '' })
+
+  const loadServers = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/mcp/servers`)
+      if (!res.ok) return
+      const data: { servers: McpServer[] } = await res.json()
+      setServers(data.servers)
+      const counts: Record<string, number> = {}
+      await Promise.all(
+        data.servers.map(async (s) => {
+          try {
+            const r = await fetch(`${API_BASE_URL}/mcp/servers/${s.name}/tools`)
+            if (r.ok) {
+              const td: { tools: McpTool[] } = await r.json()
+              counts[s.name] = td.tools.length
+            }
+          } catch {
+            // tool discovery failing for one server shouldn't block the rest
+          }
+        }),
+      )
+      setToolCounts(counts)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadServers()
+  }, [])
+
+  const removeServer = async (name: string) => {
+    setBusyName(name)
+    try {
+      await fetch(`${API_BASE_URL}/mcp/servers/${name}`, { method: 'DELETE' })
+      await loadServers()
+    } catch {
+      // best-effort
+    } finally {
+      setBusyName(null)
+    }
+  }
+
+  const toggleTools = async (name: string) => {
+    if (expandedServer === name) {
+      setExpandedServer(null)
+      return
+    }
+    setExpandedServer(name)
+    if (!tools[name]) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/mcp/servers/${name}/tools`)
+        if (res.ok) {
+          const data: { tools: McpTool[] } = await res.json()
+          setTools((prev) => ({ ...prev, [name]: data.tools }))
+        }
+      } catch {
+        // leave tools list empty on failure
+      }
+    }
+  }
+
+  const submit = async () => {
+    if (!form.name.trim() || !form.url.trim()) {
+      setError('Name and URL are required.')
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/mcp/servers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed: ${res.status}`)
+      }
+      await loadServers()
+      setForm({ name: '', url: '', description: '' })
+      setFormOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to register MCP server.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="layer-expand-body">
+      {loading && <div className="empty-hint">Loading MCP servers…</div>}
+      {!loading && servers.length === 0 && <div className="empty-hint">No MCP servers registered yet</div>}
+      {servers.map((s) => (
+        <div className="mcp-server-card" key={s.name}>
+          <div className="mcp-server-top" onClick={() => toggleTools(s.name)}>
+            <span className="mcp-server-name">{s.name}</span>
+            {toolCounts[s.name] !== undefined && (
+              <span className="mcp-server-tool-count">{toolCounts[s.name]} tools</span>
+            )}
+            <button
+              type="button"
+              className="delete-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                removeServer(s.name)
+              }}
+              disabled={busyName === s.name}
+              aria-label="Remove server"
+            >
+              🗑
+            </button>
+          </div>
+          <div className="mcp-server-url">{s.url}</div>
+          {s.description && <div className="mcp-server-description">{s.description}</div>}
+          {expandedServer === s.name && (
+            <div className="mcp-tools-list">
+              {(tools[s.name] ?? []).length === 0 && <div className="empty-hint">No tools found (or still loading)</div>}
+              {(tools[s.name] ?? []).map((tool) => (
+                <div className="mcp-tool-row" key={tool.name}>
+                  <div className="mcp-tool-name">{tool.name}</div>
+                  <div className="mcp-tool-description">{tool.description}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {!formOpen && (
+        <button type="button" className="expand-action-btn" onClick={() => setFormOpen(true)}>
+          + Add Server
+        </button>
+      )}
+
+      {formOpen && (
+        <div className="inline-form">
+          <input placeholder="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input placeholder="url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+          <input
+            placeholder="description (optional)"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          {error && <div className="form-error">{error}</div>}
+          <div className="inline-form-actions">
+            <button type="button" onClick={submit} disabled={submitting}>
+              {submitting ? 'Adding…' : 'Add'}
+            </button>
+            <button type="button" className="ghost" onClick={() => setFormOpen(false)} disabled={submitting}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 function LLMExpand() {
   const { models, refreshModels, refreshHealth } = useBackend()
+  const [activeTab, setActiveTab] = useState<'models' | 'mcp'>('models')
   const [selecting, setSelecting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -453,6 +802,19 @@ function LLMExpand() {
 
   return (
     <div className="layer-expand-body">
+      <div className="expand-tabs">
+        <button type="button" className={`expand-tab ${activeTab === 'models' ? 'active' : ''}`} onClick={() => setActiveTab('models')}>
+          Models
+        </button>
+        <button type="button" className={`expand-tab ${activeTab === 'mcp' ? 'active' : ''}`} onClick={() => setActiveTab('mcp')}>
+          MCP
+        </button>
+      </div>
+
+      {activeTab === 'mcp' && <McpExpand />}
+
+      {activeTab === 'models' && (
+        <>
       <div className="active-model-banner">
         <span className="active-model-label">Active model</span>
         <span className="active-model-value">
@@ -499,6 +861,8 @@ function LLMExpand() {
       ))}
 
       {error && <div className="form-error">{error}</div>}
+        </>
+      )}
     </div>
   )
 }
@@ -549,6 +913,7 @@ export default function LeftPanel() {
   const [overlayTop, setOverlayTop] = useState(0)
   const [overlayLeft, setOverlayLeft] = useState(0)
   const asideRef = useRef<HTMLElement>(null)
+  const activeLoops = loops.filter((loop) => loop.status === 'active')
 
   const layers: CoreLayer[] = [
     { id: 'memory', label: 'Memory', status: online ? 'Connected' : 'Idle', icon: '🧠', color: 'rgba(139, 92, 246, 0.15)' },
@@ -570,7 +935,7 @@ export default function LeftPanel() {
     {
       id: 'loops',
       label: 'Loops',
-      status: loops.length > 0 ? `${loops.length} running` : 'None active',
+      status: activeLoops.length > 0 ? `${activeLoops.length} running` : 'None active',
       icon: '🔁',
       color: 'rgba(245, 158, 11, 0.15)',
     },
@@ -655,13 +1020,13 @@ export default function LeftPanel() {
 
       <div className="panel-card">
         <h3>Running Loops</h3>
-        {loops.length === 0 ? (
+        {activeLoops.length === 0 ? (
           <div className="empty-hint">No active loops</div>
         ) : (
-          loops.map((loop, i) => (
-            <div className="kv-row" key={loop.id ?? i}>
-              <span>{loop.name ?? loop.id ?? `Loop ${i + 1}`}</span>
-              <span className="value-muted">{loop.status ?? '—'}</span>
+          activeLoops.map((loop) => (
+            <div className="kv-row" key={loop.id}>
+              <span>{loop.name}</span>
+              <span className="value-muted">{loop.run_count} run{loop.run_count === 1 ? '' : 's'}</span>
             </div>
           ))
         )}
