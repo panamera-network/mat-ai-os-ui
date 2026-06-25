@@ -11,6 +11,7 @@
 }
 
 .memory-tier-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -19,6 +20,19 @@
   border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.memory-tier-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--tier-accent);
+  border-radius: 8px;
+  padding: 1px 6px;
+  opacity: 0.85;
 }
 
 .memory-tier-card:hover {
@@ -67,12 +81,34 @@
 .memory-popover {
   position: fixed;
   z-index: 60;
-  min-width: 180px;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 260px;
+  overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--tier-accent);
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.memory-popover-entry {
+  display: block;
+  border-top: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.memory-popover-entry:first-of-type {
+  border-top: none;
+}
+
+.memory-popover-entry-text {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .memory-popover-title {

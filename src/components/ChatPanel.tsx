@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { API_BASE_URL } from '../config'
+import { useBackend } from '../context/BackendContext'
 import './ChatPanel.css'
 
 interface LearnSuggestion {
@@ -45,6 +46,7 @@ const DECISION_LABEL: Record<LearnSuggestion['decision'], string> = {
 }
 
 export default function ChatPanel() {
+  const { sessionId, newConversation } = useBackend()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [activeMode, setActiveMode] = useState('chat')
@@ -53,6 +55,12 @@ export default function ChatPanel() {
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [resolvedIds, setResolvedIds] = useState<Set<number>>(new Set())
 
+  const startNewConversation = () => {
+    newConversation()
+    setMessages([])
+    setResolvedIds(new Set())
+  }
+
   const sendTask = async (task: string) => {
     setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task }])
     setPending(true)
@@ -60,7 +68,7 @@ export default function ChatPanel() {
       const res = await fetch(`${API_BASE_URL}/task`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task }),
+        body: JSON.stringify({ task, session_id: sessionId }),
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const data: { result: string } = await res.json()
@@ -167,6 +175,11 @@ export default function ChatPanel() {
 
   return (
     <div className="chat-panel-card chat-panel">
+      <div className="chat-panel-toolbar">
+        <button type="button" className="new-conversation-btn" onClick={startNewConversation} disabled={pending}>
+          + New Conversation
+        </button>
+      </div>
       <div className="chat-messages">
         {messages.length === 0 && <div className="empty-hint">Ask MAT.AI anything</div>}
         {messages.map((m) => {

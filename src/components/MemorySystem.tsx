@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { useBackend } from '../context/BackendContext'
+import { API_BASE_URL } from '../config'
 import './MemorySystem.css'
 
 interface MemoryTier {
@@ -24,10 +25,37 @@ interface PopoverPosition {
   width: number
 }
 
+interface TierMemory {
+  id?: string
+  memory?: string
+  text?: string
+  content?: string
+  created_at?: string
+}
+
 export default function MemorySystem() {
-  const { health, online } = useBackend()
+  const { health, online, memoryTiers } = useBackend()
   const [openTier, setOpenTier] = useState<MemoryTier | null>(null)
   const [popoverPos, setPopoverPos] = useState<PopoverPosition>({ left: 0, top: 0, width: 0 })
+  const [tierMemories, setTierMemories] = useState<TierMemory[]>([])
+  const [loadingTier, setLoadingTier] = useState(false)
+
+  const loadTierMemories = async (tierId: string) => {
+    setLoadingTier(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/memory/tiers/${tierId}?limit=10`, { signal: AbortSignal.timeout(5000) })
+      if (res.ok) {
+        const data: { memories: TierMemory[] } = await res.json()
+        setTierMemories(data.memories)
+      } else {
+        setTierMemories([])
+      }
+    } catch {
+      setTierMemories([])
+    } finally {
+      setLoadingTier(false)
+    }
+  }
 
   const toggleTier = (tier: MemoryTier, el: HTMLElement) => {
     if (openTier?.id === tier.id) {
@@ -37,6 +65,8 @@ export default function MemorySystem() {
     const rect = el.getBoundingClientRect()
     setPopoverPos({ left: rect.left, top: rect.bottom + 6, width: rect.width })
     setOpenTier(tier)
+    setTierMemories([])
+    loadTierMemories(tier.id)
   }
 
   return (
@@ -48,24 +78,28 @@ export default function MemorySystem() {
           : 'Backend offline'}
       </div>
       <div className="memory-grid">
-        {MEMORY_TIERS.map((tier) => (
-          <div
-            className={`memory-tier-card ${openTier?.id === tier.id ? 'active' : ''}`}
-            key={tier.id}
-            style={{ '--tier-accent': tier.accent } as CSSProperties}
-            onClick={(e) => toggleTier(tier, e.currentTarget)}
-            role="button"
-            tabIndex={0}
-          >
-            <span className="memory-tier-icon" style={{ background: tier.bg }}>
-              {tier.icon}
-            </span>
-            <div className="memory-tier-text">
-              <div className="memory-tier-label">{tier.label}</div>
-              <div className="memory-tier-value">{tier.hint}</div>
+        {MEMORY_TIERS.map((tier) => {
+          const count = memoryTiers?.counts[tier.id]
+          return (
+            <div
+              className={`memory-tier-card ${openTier?.id === tier.id ? 'active' : ''}`}
+              key={tier.id}
+              style={{ '--tier-accent': tier.accent } as CSSProperties}
+              onClick={(e) => toggleTier(tier, e.currentTarget)}
+              role="button"
+              tabIndex={0}
+            >
+              <span className="memory-tier-icon" style={{ background: tier.bg }}>
+                {tier.icon}
+              </span>
+              <div className="memory-tier-text">
+                <div className="memory-tier-label">{tier.label}</div>
+                <div className="memory-tier-value">{tier.hint}</div>
+              </div>
+              {count !== undefined && <span className="memory-tier-badge">{count}</span>}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {openTier && <div className="memory-popover-backdrop" onClick={() => setOpenTier(null)} />}
@@ -74,20 +108,17 @@ export default function MemorySystem() {
           className="memory-popover"
           style={{ left: popoverPos.left, top: popoverPos.top, '--tier-accent': openTier.accent } as CSSProperties}
         >
-          <div className="memory-popover-title">{openTier.label}</div>
-          <div className="memory-popover-row">
-            <span>Memories</span>
-            <span className="value-muted">—</span>
+          <div className="memory-popover-title">
+            {openTier.label} ({memoryTiers?.counts[openTier.id] ?? 0})
           </div>
-          <div className="memory-popover-row">
-            <span>Last updated</span>
-            <span className="value-muted">—</span>
-          </div>
-          <div className="memory-popover-row">
-            <span>Storage size</span>
-            <span className="value-muted">—</span>
-          </div>
-          <div className="memory-popover-note">Per-tier metrics aren't tracked by the backend yet.</div>
+          {loadingTier && <div className="memory-popover-note">Loading…</div>}
+          {!loadingTier && tierMemories.length === 0 && <div className="memory-popover-note">No memories in this tier.</div>}
+          {!loadingTier &&
+            tierMemories.map((m, i) => (
+              <div className="memory-popover-row memory-popover-entry" key={m.id ?? i}>
+                <span className="memory-popover-entry-text">{m.memory || m.text || m.content || '—'}</span>
+              </div>
+            ))}
         </div>
       )}
     </div>

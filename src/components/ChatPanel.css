@@ -5,6 +5,33 @@
   min-height: 0;
 }
 
+.chat-panel-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.new-conversation-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.new-conversation-btn:hover {
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+}
+
+.new-conversation-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .chat-messages {
   flex: 1;
   min-height: 60px;

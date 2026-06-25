@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import './Header.css'
 
+const TELEGRAM_LABEL: Record<string, string> = {
+  online: 'Telegram online',
+  offline: 'Telegram offline (error)',
+  disabled: 'Telegram disabled (no token)',
+}
+
 export default function Header() {
   const [time, setTime] = useState(new Date())
   const { online, health } = useBackend()
   const status = online ? 'online' : 'offline'
+  const telegramStatus = health?.telegram_status ?? 'disabled'
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
@@ -25,6 +32,13 @@ export default function Header() {
           {status === 'online' ? 'Online' : 'Offline'}
         </div>
         {health?.active_model && <div className="model-pill">{health.active_model.model}</div>}
+        <span
+          className={`telegram-icon telegram-${telegramStatus}`}
+          title={TELEGRAM_LABEL[telegramStatus] ?? TELEGRAM_LABEL.disabled}
+          aria-label={TELEGRAM_LABEL[telegramStatus] ?? TELEGRAM_LABEL.disabled}
+        >
+          ✈
+        </span>
         <div className="clock">
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>

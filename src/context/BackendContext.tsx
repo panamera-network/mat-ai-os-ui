@@ -39,6 +39,14 @@ export interface Health {
   skills_count: number
   domains_count: number
   active_model?: ModelOption
+  memory_tiers?: Record<string, number>
+  telegram_status?: 'online' | 'offline' | 'disabled'
+}
+
+export interface MemoryTierStats {
+  counts: Record<string, number>
+  total_memories: number
+  estimated_size_bytes: number
 }
 
 export interface ModelsInfo {
@@ -70,12 +78,21 @@ interface BackendState {
   skillsByDomain: Record<string, SkillSummary[]>
   models: ModelsInfo | null
   soul: SoulInfo | null
+  memoryTiers: MemoryTierStats | null
+  sessionId: string
   activeDomains: Set<string>
   refreshAgents: () => Promise<void>
   refreshSkills: () => Promise<void>
   refreshHealth: () => Promise<void>
   refreshModels: () => Promise<void>
   refreshSoul: () => Promise<void>
+  refreshMemoryTiers: () => Promise<void>
+  newConversation: () => void
+}
+
+function generateSessionId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 const BackendContext = createContext<BackendState>({
@@ -86,12 +103,16 @@ const BackendContext = createContext<BackendState>({
   skillsByDomain: {},
   models: null,
   soul: null,
+  memoryTiers: null,
+  sessionId: '',
   activeDomains: new Set(),
   refreshAgents: async () => {},
   refreshSkills: async () => {},
   refreshHealth: async () => {},
   refreshModels: async () => {},
   refreshSoul: async () => {},
+  refreshMemoryTiers: async () => {},
+  newConversation: () => {},
 })
 
 export function BackendProvider({ children }: { children: ReactNode }) {
@@ -102,6 +123,8 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   const [skillsByDomain, setSkillsByDomain] = useState<Record<string, SkillSummary[]>>({})
   const [models, setModels] = useState<ModelsInfo | null>(null)
   const [soul, setSoul] = useState<SoulInfo | null>(null)
+  const [memoryTiers, setMemoryTiers] = useState<MemoryTierStats | null>(null)
+  const [sessionId, setSessionId] = useState<string>(() => generateSessionId())
   const [activeDomains, setActiveDomains] = useState<Set<string>>(new Set())
 
   const fetchHealth = useCallback(async () => {
@@ -159,6 +182,25 @@ export function BackendProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchMemoryTiers = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/memory/tiers`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) setMemoryTiers(await res.json())
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
+  const newConversation = useCallback(() => {
+    setSessionId(generateSessionId())
+  }, [])
+
+  useEffect(() => {
+    fetchMemoryTiers()
+    const id = setInterval(fetchMemoryTiers, 30000)
+    return () => clearInterval(id)
+  }, [fetchMemoryTiers])
+
   useEffect(() => {
     fetchHealth()
     fetchAgents()
@@ -208,12 +250,16 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         skillsByDomain,
         models,
         soul,
+        memoryTiers,
+        sessionId,
         activeDomains,
         refreshAgents: fetchAgents,
         refreshSkills: fetchSkills,
         refreshHealth: fetchHealth,
         refreshModels: fetchModels,
         refreshSoul: fetchSoul,
+        refreshMemoryTiers: fetchMemoryTiers,
+        newConversation,
       }}
     >
       {children}
