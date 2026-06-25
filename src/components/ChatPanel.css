@@ -61,6 +61,26 @@
   font-style: italic;
 }
 
+.chat-elapsed-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.chat-duration-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
 .chat-message.governance {
   font-size: 12px;
 }

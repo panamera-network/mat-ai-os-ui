@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../config'
 import { useBackend } from '../context/BackendContext'
 import './ChatPanel.css'
@@ -44,6 +44,11 @@ interface ChatMessage {
   govKind?: GovernanceKind
   suggestion?: LearnSuggestion
   collaboration?: CollaborationData
+  durationMs?: number
+}
+
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
 }
 
 const DOMAIN_ICONS: Record<string, string> = {
@@ -88,6 +93,18 @@ export default function ChatPanel() {
   const [modePickerOpen, setModePickerOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [resolvedIds, setResolvedIds] = useState<Set<number>>(new Set())
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const pendingStartRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!pending) return
+    pendingStartRef.current = Date.now()
+    setElapsedMs(0)
+    const id = setInterval(() => {
+      if (pendingStartRef.current !== null) setElapsedMs(Date.now() - pendingStartRef.current)
+    }, 100)
+    return () => clearInterval(id)
+  }, [pending])
 
   const startNewConversation = () => {
     newConversation()
@@ -98,6 +115,7 @@ export default function ChatPanel() {
   const sendTask = async (task: string) => {
     setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task }])
     setPending(true)
+    const startedAt = Date.now()
     try {
       const res = await fetch(`${API_BASE_URL}/task`, {
         method: 'POST',
@@ -108,7 +126,13 @@ export default function ChatPanel() {
       const data: { result: string; collaboration?: CollaborationData | null } = await res.json()
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, role: 'orchestrator', text: data.result, collaboration: data.collaboration ?? undefined },
+        {
+          id: Date.now() + 1,
+          role: 'orchestrator',
+          text: data.result,
+          collaboration: data.collaboration ?? undefined,
+          durationMs: Date.now() - startedAt,
+        },
       ])
     } catch {
       setMessages((prev) => [
@@ -123,6 +147,7 @@ export default function ChatPanel() {
   const sendLearn = async (source: string) => {
     setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: `Learn: ${source}` }])
     setPending(true)
+    const startedAt = Date.now()
     try {
       const res = await fetch(`${API_BASE_URL}/learn`, {
         method: 'POST',
@@ -131,15 +156,16 @@ export default function ChatPanel() {
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const suggestion: LearnSuggestion = await res.json()
+      const durationMs = Date.now() - startedAt
       if (suggestion.status === 'rejected') {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'governance', govKind: 'rejected', text: suggestion.reason, suggestion },
+          { id: Date.now() + 1, role: 'governance', govKind: 'rejected', text: suggestion.reason, suggestion, durationMs },
         ])
       } else {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'governance', govKind: 'suggestion', text: suggestion.reason, suggestion },
+          { id: Date.now() + 1, role: 'governance', govKind: 'suggestion', text: suggestion.reason, suggestion, durationMs },
         ])
       }
     } catch {
@@ -226,7 +252,10 @@ export default function ChatPanel() {
               const resolved = resolvedIds.has(m.id)
               return (
                 <div key={m.id} className="chat-message governance suggestion">
-                  <div className="gov-card-title">{DECISION_LABEL[s.decision]}</div>
+                  <div className="gov-card-title">
+                    {DECISION_LABEL[s.decision]}
+                    {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
+                  </div>
                   {s.domain && <div className="gov-card-row">Domain: {s.domain}</div>}
                   {s.skill_id && <div className="gov-card-row">Skill: {s.skill_id}</div>}
                   <div className="gov-card-reason">{s.reason}</div>
@@ -254,6 +283,7 @@ export default function ChatPanel() {
             return (
               <div key={m.id} className={`chat-message governance ${m.govKind}`}>
                 {m.text}
+                {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
               </div>
             )
           }
@@ -272,6 +302,7 @@ export default function ChatPanel() {
                       </span>
                     ))}
                   </div>
+                  {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
                 </div>
                 <div className="collab-reason">{c.reason}</div>
                 <div className="collab-subtasks">
@@ -297,14 +328,21 @@ export default function ChatPanel() {
             <div key={m.id} className={`chat-message ${m.role}`}>
               {m.text}
               {m.role === 'orchestrator' && (
-                <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
-                  {copiedId === m.id ? 'Copied!' : '📋'}
-                </button>
+                <>
+                  {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
+                  <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
+                    {copiedId === m.id ? 'Copied!' : '📋'}
+                  </button>
+                </>
               )}
             </div>
           )
         })}
-        {pending && <div className="chat-message orchestrator pending">Thinking…</div>}
+        {pending && (
+          <div className="chat-message orchestrator pending">
+            Thinking… <span className="chat-elapsed-time">{formatDuration(elapsedMs)}</span>
+          </div>
+        )}
       </div>
 
       <div className="chat-input-row">
