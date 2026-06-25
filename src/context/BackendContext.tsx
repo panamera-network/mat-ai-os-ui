@@ -62,6 +62,30 @@ export interface SoulInfo {
   active_style: string
 }
 
+export interface Suggestion {
+  id: string
+  type: 'new_skill' | 'new_agent' | 'learn_topic' | string
+  title: string
+  reason: string
+  action: Record<string, unknown>
+  priority: 'high' | 'medium' | 'low' | string
+  status: string
+  created_at: string
+}
+
+export interface QueueTask {
+  id: string
+  task: string
+  session_id: string | null
+  priority: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | string
+  result: string | null
+  error: string | null
+  created_at: string
+  started_at: string | null
+  completed_at: string | null
+}
+
 interface OrchestratorEvent {
   type: 'agent_active' | 'agent_idle' | 'task_started' | 'task_completed'
   agent_id?: string
@@ -80,6 +104,8 @@ interface BackendState {
   soul: SoulInfo | null
   memoryTiers: MemoryTierStats | null
   sessionId: string
+  suggestions: Suggestion[]
+  queueTasks: QueueTask[]
   activeDomains: Set<string>
   refreshAgents: () => Promise<void>
   refreshSkills: () => Promise<void>
@@ -87,6 +113,10 @@ interface BackendState {
   refreshModels: () => Promise<void>
   refreshSoul: () => Promise<void>
   refreshMemoryTiers: () => Promise<void>
+  refreshSuggestions: () => Promise<void>
+  refreshQueue: () => Promise<void>
+  dismissSuggestion: (id: string) => Promise<void>
+  actOnSuggestion: (id: string) => Promise<{ status: string; result?: unknown; error?: string }>
   newConversation: () => void
 }
 
@@ -105,6 +135,8 @@ const BackendContext = createContext<BackendState>({
   soul: null,
   memoryTiers: null,
   sessionId: '',
+  suggestions: [],
+  queueTasks: [],
   activeDomains: new Set(),
   refreshAgents: async () => {},
   refreshSkills: async () => {},
@@ -112,6 +144,10 @@ const BackendContext = createContext<BackendState>({
   refreshModels: async () => {},
   refreshSoul: async () => {},
   refreshMemoryTiers: async () => {},
+  refreshSuggestions: async () => {},
+  refreshQueue: async () => {},
+  dismissSuggestion: async () => {},
+  actOnSuggestion: async () => ({ status: 'error' }),
   newConversation: () => {},
 })
 
@@ -125,6 +161,8 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   const [soul, setSoul] = useState<SoulInfo | null>(null)
   const [memoryTiers, setMemoryTiers] = useState<MemoryTierStats | null>(null)
   const [sessionId, setSessionId] = useState<string>(() => generateSessionId())
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [queueTasks, setQueueTasks] = useState<QueueTask[]>([])
   const [activeDomains, setActiveDomains] = useState<Set<string>>(new Set())
 
   const fetchHealth = useCallback(async () => {
@@ -191,6 +229,54 @@ export function BackendProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchSuggestions = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/suggestions`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) {
+        const data: { suggestions: Suggestion[] } = await res.json()
+        setSuggestions(data.suggestions)
+      }
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
+  const fetchQueue = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/queue`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) {
+        const data: { tasks: QueueTask[] } = await res.json()
+        setQueueTasks(data.tasks)
+      }
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
+  const dismissSuggestion = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/suggestions/dismiss/${id}`, { method: 'POST' })
+      if (res.ok) setSuggestions((prev) => prev.filter((s) => s.id !== id))
+    } catch {
+      // leave the suggestion in place if the request failed
+    }
+  }, [])
+
+  const actOnSuggestion = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/suggestions/act/${id}`, { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        return { status: 'error', error: body.detail ?? `Request failed: ${res.status}` }
+      }
+      const data: { suggestion_id: string; result: unknown } = await res.json()
+      setSuggestions((prev) => prev.filter((s) => s.id !== id))
+      return { status: 'ok', result: data.result }
+    } catch {
+      return { status: 'error', error: 'Could not reach the Orchestrator.' }
+    }
+  }, [])
+
   const newConversation = useCallback(() => {
     setSessionId(generateSessionId())
   }, [])
@@ -200,6 +286,18 @@ export function BackendProvider({ children }: { children: ReactNode }) {
     const id = setInterval(fetchMemoryTiers, 30000)
     return () => clearInterval(id)
   }, [fetchMemoryTiers])
+
+  useEffect(() => {
+    fetchSuggestions()
+    const id = setInterval(fetchSuggestions, 60000)
+    return () => clearInterval(id)
+  }, [fetchSuggestions])
+
+  useEffect(() => {
+    fetchQueue()
+    const id = setInterval(fetchQueue, 5000)
+    return () => clearInterval(id)
+  }, [fetchQueue])
 
   useEffect(() => {
     fetchHealth()
@@ -252,6 +350,8 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         soul,
         memoryTiers,
         sessionId,
+        suggestions,
+        queueTasks,
         activeDomains,
         refreshAgents: fetchAgents,
         refreshSkills: fetchSkills,
@@ -259,6 +359,10 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         refreshModels: fetchModels,
         refreshSoul: fetchSoul,
         refreshMemoryTiers: fetchMemoryTiers,
+        refreshSuggestions: fetchSuggestions,
+        refreshQueue: fetchQueue,
+        dismissSuggestion,
+        actOnSuggestion,
         newConversation,
       }}
     >

@@ -17,12 +17,46 @@ interface LearnSuggestion {
 
 type GovernanceKind = 'rejected' | 'suggestion' | 'approved' | 'discarded'
 
+interface CollaborationSubtask {
+  domain: string
+  task: string
+  agent_id: string
+  agent_name: string
+}
+
+interface CollaborationSubResult extends CollaborationSubtask {
+  result: string
+}
+
+interface CollaborationData {
+  id: string
+  type: 'sequential' | 'parallel' | 'review'
+  reason: string
+  plan: { subtasks: CollaborationSubtask[] }
+  sub_results: CollaborationSubResult[]
+  final_result: string
+}
+
 interface ChatMessage {
   id: number
   role: 'user' | 'orchestrator' | 'governance'
   text: string
   govKind?: GovernanceKind
   suggestion?: LearnSuggestion
+  collaboration?: CollaborationData
+}
+
+const DOMAIN_ICONS: Record<string, string> = {
+  trading: '📈',
+  coding: '🧩',
+  research: '🔬',
+  business: '📋',
+  personal: '✅',
+  legal: '⚖️',
+  creative: '🎨',
+  ai_automation: '🤖',
+  data_analytics: '📊',
+  web3_blockchain: '⛓️',
 }
 
 interface InterfaceMode {
@@ -71,8 +105,11 @@ export default function ChatPanel() {
         body: JSON.stringify({ task, session_id: sessionId }),
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data: { result: string } = await res.json()
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: 'orchestrator', text: data.result }])
+      const data: { result: string; collaboration?: CollaborationData | null } = await res.json()
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: 'orchestrator', text: data.result, collaboration: data.collaboration ?? undefined },
+      ])
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -217,6 +254,41 @@ export default function ChatPanel() {
             return (
               <div key={m.id} className={`chat-message governance ${m.govKind}`}>
                 {m.text}
+              </div>
+            )
+          }
+
+          if (m.role === 'orchestrator' && m.collaboration) {
+            const c = m.collaboration
+            const agents = c.plan.subtasks
+            return (
+              <div key={m.id} className="chat-message orchestrator collaboration">
+                <div className="collab-header">
+                  <span className="collab-badge">{c.type} collaboration</span>
+                  <div className="collab-avatars">
+                    {agents.map((a) => (
+                      <span className="collab-avatar" key={a.agent_id} title={`${a.agent_name} (${a.domain})`}>
+                        {DOMAIN_ICONS[a.domain] ?? '🤖'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="collab-reason">{c.reason}</div>
+                <div className="collab-subtasks">
+                  {c.sub_results.map((sr, i) => (
+                    <div className="collab-subtask" key={sr.agent_id + i}>
+                      <div className="collab-subtask-agent">
+                        {DOMAIN_ICONS[sr.domain] ?? '🤖'} {sr.agent_name}
+                      </div>
+                      <div className="collab-subtask-text">{sr.task}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="collab-final-label">Merged result</div>
+                <div className="collab-final-result">{c.final_result}</div>
+                <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
+                  {copiedId === m.id ? 'Copied!' : '📋'}
+                </button>
               </div>
             )
           }

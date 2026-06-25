@@ -139,6 +139,97 @@
   cursor: default;
 }
 
+.chat-message.collaboration {
+  align-self: stretch;
+  max-width: 100%;
+  border: 1px solid var(--accent-blue);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.collab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.collab-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid var(--accent-blue);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+
+.collab-avatars {
+  display: flex;
+  gap: 4px;
+}
+
+.collab-avatar {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.collab-reason {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.collab-subtasks {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collab-subtask {
+  border-left: 2px solid var(--accent-blue);
+  padding-left: 8px;
+}
+
+.collab-subtask-agent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.collab-subtask-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.collab-final-label {
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-blue);
+}
+
+.collab-final-result {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
 .chat-copy-btn {
   position: absolute;
   top: 4px;

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
+import SuggestionsPanel from './SuggestionsPanel'
+import QueuePanel from './QueuePanel'
 import './Header.css'
 
 const TELEGRAM_LABEL: Record<string, string> = {
@@ -10,9 +12,13 @@ const TELEGRAM_LABEL: Record<string, string> = {
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
-  const { online, health } = useBackend()
+  const { online, health, suggestions, queueTasks } = useBackend()
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+  const [queueOpen, setQueueOpen] = useState(false)
   const status = online ? 'online' : 'offline'
   const telegramStatus = health?.telegram_status ?? 'disabled'
+  const activeQueueCount = queueTasks.filter((t) => t.status === 'pending' || t.status === 'running').length
+  const hasRunningTask = queueTasks.some((t) => t.status === 'running')
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
@@ -32,6 +38,29 @@ export default function Header() {
           {status === 'online' ? 'Online' : 'Offline'}
         </div>
         {health?.active_model && <div className="model-pill">{health.active_model.model}</div>}
+
+        <button
+          type="button"
+          className="header-icon-btn"
+          onClick={() => setQueueOpen((open) => !open)}
+          aria-label="Task queue"
+          title="Task queue"
+        >
+          <span className={hasRunningTask ? 'queue-icon running' : 'queue-icon'}>🗂️</span>
+          {activeQueueCount > 0 && <span className="header-icon-badge">{activeQueueCount}</span>}
+        </button>
+
+        <button
+          type="button"
+          className="header-icon-btn"
+          onClick={() => setSuggestionsOpen((open) => !open)}
+          aria-label="Proactive suggestions"
+          title="Proactive suggestions"
+        >
+          <span className="suggestions-icon">💡</span>
+          {suggestions.length > 0 && <span className="header-icon-badge">{suggestions.length}</span>}
+        </button>
+
         <span
           className={`telegram-icon telegram-${telegramStatus}`}
           title={TELEGRAM_LABEL[telegramStatus] ?? TELEGRAM_LABEL.disabled}
@@ -43,6 +72,9 @@ export default function Header() {
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
       </div>
+
+      {suggestionsOpen && <SuggestionsPanel onClose={() => setSuggestionsOpen(false)} />}
+      {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
     </header>
   )
 }
