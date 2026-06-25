@@ -150,34 +150,188 @@ function ResponseStylesSection() {
   )
 }
 
-function MemoryExpand() {
-  const { health, online } = useBackend()
+interface AnalyticsStats {
+  total_skills_learned: number
+  total_improved: number
+  total_rejected: number
+  total_approved: number
+  total_discarded: number
+  most_active_domain: string | null
+  learning_velocity_per_week: number
+  top_performing_agents: { agent_id: string; count: number }[]
+}
+
+interface TimelineEvent {
+  type: string
+  data: Record<string, unknown>
+  timestamp: string
+}
+
+const EVENT_ICON: Record<string, string> = {
+  approved: '✅',
+  improved: '🔄',
+  learned: '✅',
+  created: '✅',
+  rejected: '❌',
+  discarded: '🗑️',
+}
+
+function formatTimelineTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return iso
+  }
+}
+
+function AnalyticsSection() {
+  const [stats, setStats] = useState<AnalyticsStats | null>(null)
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [statsRes, timelineRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/analytics`),
+        fetch(`${API_BASE_URL}/analytics/timeline`),
+      ])
+      if (statsRes.ok) setStats(await statsRes.json())
+      if (timelineRes.ok) {
+        const data: { timeline: TimelineEvent[] } = await timelineRes.json()
+        setTimeline([...data.timeline].reverse())
+      }
+    } catch {
+      setError('Could not reach the Orchestrator.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
   return (
     <div className="layer-expand-body">
-      <div className="empty-hint" style={{ marginBottom: 8 }}>
-        Memory tier breakdown isn't tracked by the backend yet — showing system snapshot.
-      </div>
-      <div className="stat-grid">
-        <div className="stat-cell">
-          <span className="stat-value">{online ? 'Online' : 'Offline'}</span>
-          <span className="stat-label">Connection</span>
+      <button type="button" className="expand-action-btn" onClick={load} disabled={loading}>
+        {loading ? 'Refreshing…' : '⟳ Refresh'}
+      </button>
+      {error && <div className="form-error">{error}</div>}
+
+      {stats && (
+        <>
+          <div className="stat-grid">
+            <div className="stat-cell">
+              <span className="stat-value">{stats.total_skills_learned}</span>
+              <span className="stat-label">Skills learned</span>
+            </div>
+            <div className="stat-cell">
+              <span className="stat-value">{stats.total_improved}</span>
+              <span className="stat-label">Improved</span>
+            </div>
+            <div className="stat-cell">
+              <span className="stat-value">{stats.total_rejected}</span>
+              <span className="stat-label">Rejected</span>
+            </div>
+            <div className="stat-cell">
+              <span className="stat-value">{stats.most_active_domain ?? '—'}</span>
+              <span className="stat-label">Most active domain</span>
+            </div>
+          </div>
+          <div className="kv-row">
+            <span>Learning velocity</span>
+            <span className="value-muted">{stats.learning_velocity_per_week}/week</span>
+          </div>
+
+          <div className="model-section-title">Top Performing Agents</div>
+          {stats.top_performing_agents.length === 0 ? (
+            <div className="empty-hint">No agent performance data yet</div>
+          ) : (
+            stats.top_performing_agents.map((a) => (
+              <div className="kv-row" key={a.agent_id}>
+                <span>{a.agent_id}</span>
+                <span className="value-muted">{a.count}</span>
+              </div>
+            ))
+          )}
+        </>
+      )}
+
+      <div className="model-section-title">Timeline</div>
+      {timeline.length === 0 && <div className="empty-hint">No learning events yet</div>}
+      {timeline.map((event, i) => (
+        <div className="timeline-row" key={i}>
+          <span className="timeline-icon">{EVENT_ICON[event.type] ?? '•'}</span>
+          <div className="timeline-text">
+            <div className="timeline-top">
+              <span className="timeline-type">{event.type}</span>
+              <span className="timeline-time">{formatTimelineTime(event.timestamp)}</span>
+            </div>
+            <div className="timeline-detail">
+              {String(event.data.skill_id ?? event.data.source ?? '')}
+              {event.data.domain ? ` · ${event.data.domain}` : ''}
+            </div>
+          </div>
         </div>
-        <div className="stat-cell">
-          <span className="stat-value">{health?.agents_count ?? '—'}</span>
-          <span className="stat-label">Agents</span>
-        </div>
-        <div className="stat-cell">
-          <span className="stat-value">{health?.skills_count ?? '—'}</span>
-          <span className="stat-label">Skills</span>
-        </div>
-        <div className="stat-cell">
-          <span className="stat-value">{health?.domains_count ?? '—'}</span>
-          <span className="stat-label">Domains</span>
-        </div>
+      ))}
+    </div>
+  )
+}
+
+const MEMORY_TABS = ['overview', 'soul', 'styles', 'analytics'] as const
+
+function MemoryExpand() {
+  const { health, online } = useBackend()
+  const [activeTab, setActiveTab] = useState<(typeof MEMORY_TABS)[number]>('overview')
+
+  return (
+    <div className="layer-expand-body">
+      <div className="expand-tabs">
+        <button type="button" className={`expand-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+          Overview
+        </button>
+        <button type="button" className={`expand-tab ${activeTab === 'soul' ? 'active' : ''}`} onClick={() => setActiveTab('soul')}>
+          Soul
+        </button>
+        <button type="button" className={`expand-tab ${activeTab === 'styles' ? 'active' : ''}`} onClick={() => setActiveTab('styles')}>
+          Styles
+        </button>
+        <button
+          type="button"
+          className={`expand-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Analytics
+        </button>
       </div>
 
-      <SoulPromptSection />
-      <ResponseStylesSection />
+      {activeTab === 'overview' && (
+        <div className="stat-grid">
+          <div className="stat-cell">
+            <span className="stat-value">{online ? 'Online' : 'Offline'}</span>
+            <span className="stat-label">Connection</span>
+          </div>
+          <div className="stat-cell">
+            <span className="stat-value">{health?.agents_count ?? '—'}</span>
+            <span className="stat-label">Agents</span>
+          </div>
+          <div className="stat-cell">
+            <span className="stat-value">{health?.skills_count ?? '—'}</span>
+            <span className="stat-label">Skills</span>
+          </div>
+          <div className="stat-cell">
+            <span className="stat-value">{health?.domains_count ?? '—'}</span>
+            <span className="stat-label">Domains</span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'soul' && <SoulPromptSection />}
+      {activeTab === 'styles' && <ResponseStylesSection />}
+      {activeTab === 'analytics' && <AnalyticsSection />}
     </div>
   )
 }

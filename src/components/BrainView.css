@@ -3,7 +3,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  margin: 10px 10px 0;
+  margin: 10px 5px 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--bg-panel);
@@ -34,6 +34,42 @@
   gap: 12px;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.brain-mode-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.brain-mode-toggle button {
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.brain-mode-toggle button:hover {
+  border-color: var(--accent-purple);
+}
+
+.brain-mode-toggle button.active {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--text-primary);
+}
+
+.brain-view-loading {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 .brain-view {
@@ -91,27 +127,27 @@
 }
 
 .brain-node.core .brain-node-dot {
-  width: 13px;
-  height: 13px;
+  width: 25px;
+  height: 25px;
   background: var(--accent-purple);
   box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25), 0 0 16px 4px rgba(139, 92, 246, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 9px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1;
 }
 
 .brain-node.domain .brain-node-dot {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 .brain-node.skill .brain-node-dot {
-  width: 2.5px;
-  height: 2.5px;
+  width: 3px;
+  height: 3px;
   background: #4a4a56;
 }
 
@@ -146,4 +182,154 @@
 
 .brain-node.active .brain-node-label {
   color: var(--text-primary);
+}
+
+.brain-node.agent .brain-node-dot {
+  width: 8px;
+  height: 8px;
+  background: #a78bfa;
+  box-shadow: 0 0 8px 1px rgba(167, 139, 250, 0.5);
+}
+
+.brain-node.agent .brain-node-label {
+  font-size: 10px;
+  color: #c4b5fd;
+}
+
+.brain-node.memory .brain-node-dot {
+  width: 2px;
+  height: 2px;
+  background: #4a4a56;
+  opacity: 0.7;
+}
+
+.brain-node.hovered .brain-node-dot {
+  box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.3);
+}
+
+.kg-edge {
+  opacity: 0.18;
+}
+
+.kg-edge-uses {
+  stroke: #a78bfa;
+  opacity: 0.25;
+}
+
+.kg-edge-operates_in {
+  stroke: #a78bfa;
+  opacity: 0.15;
+}
+
+.kg-edge-belongs_to {
+  opacity: 0.18;
+}
+
+.brain-tooltip {
+  position: fixed;
+  z-index: 30;
+  transform: translate(10px, 10px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.brain-tooltip-type {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.brain-tooltip-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.brain-tooltip-connections {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.brain-detail-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  width: 220px;
+  z-index: 20;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-purple);
+  border-radius: 10px;
+  padding: 14px;
+  overflow-y: auto;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.brain-detail-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.brain-detail-close:hover {
+  color: var(--text-primary);
+}
+
+.brain-detail-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-purple);
+  margin-top: 6px;
+}
+
+.brain-detail-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.brain-detail-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  padding: 2px 0;
+}
+
+.brain-detail-section-title {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.brain-detail-connection {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-primary);
+  padding: 3px 0;
+}
+
+.brain-detail-connection-rel {
+  font-size: 9px;
+  color: var(--accent-blue);
+  text-transform: uppercase;
 }
