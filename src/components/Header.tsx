@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
+import ProfilePanel from './ProfilePanel'
 import './Header.css'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
+  const [profileOpen, setProfileOpen] = useState(false)
   const { online } = useBackend()
   const status = online ? 'online' : 'offline'
 
@@ -20,6 +22,9 @@ export default function Header() {
       </div>
       <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
       <div className="app-header-right">
+        <button type="button" className="profile-btn" onClick={() => setProfileOpen(true)}>
+          Profile
+        </button>
         <div className={`status-pill ${status}`}>
           <span className="status-dot" />
           {status === 'online' ? 'Online' : 'Offline'}
@@ -28,6 +33,7 @@ export default function Header() {
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
       </div>
+      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
     </header>
   )
 }

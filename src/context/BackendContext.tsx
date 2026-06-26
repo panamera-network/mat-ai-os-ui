@@ -70,6 +70,23 @@ export interface SoulInfo {
   active_style: string
 }
 
+export interface IdentityProfile {
+  name: string
+  nickname: string
+  language: string
+  profession: string[]
+  active_projects: string[]
+  goals: {
+    short_term: string[]
+    long_term: string[]
+  }
+  preferences: {
+    communication_style: string
+    work_hours: string
+  }
+  timezone: string
+}
+
 export interface Suggestion {
   id: string
   type: 'new_skill' | 'new_agent' | 'learn_topic' | string
@@ -110,6 +127,7 @@ interface BackendState {
   skillsByDomain: Record<string, SkillSummary[]>
   models: ModelsInfo | null
   soul: SoulInfo | null
+  identity: IdentityProfile | null
   memoryTiers: MemoryTierStats | null
   sessionId: string
   suggestions: Suggestion[]
@@ -121,6 +139,8 @@ interface BackendState {
   refreshModels: () => Promise<void>
   refreshLoops: () => Promise<void>
   refreshSoul: () => Promise<void>
+  refreshIdentity: () => Promise<void>
+  updateIdentity: (field: string, value: unknown) => Promise<boolean>
   refreshMemoryTiers: () => Promise<void>
   refreshSuggestions: () => Promise<void>
   refreshQueue: () => Promise<void>
@@ -142,6 +162,7 @@ const BackendContext = createContext<BackendState>({
   skillsByDomain: {},
   models: null,
   soul: null,
+  identity: null,
   memoryTiers: null,
   sessionId: '',
   suggestions: [],
@@ -153,6 +174,8 @@ const BackendContext = createContext<BackendState>({
   refreshModels: async () => {},
   refreshLoops: async () => {},
   refreshSoul: async () => {},
+  refreshIdentity: async () => {},
+  updateIdentity: async () => false,
   refreshMemoryTiers: async () => {},
   refreshSuggestions: async () => {},
   refreshQueue: async () => {},
@@ -169,6 +192,7 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   const [skillsByDomain, setSkillsByDomain] = useState<Record<string, SkillSummary[]>>({})
   const [models, setModels] = useState<ModelsInfo | null>(null)
   const [soul, setSoul] = useState<SoulInfo | null>(null)
+  const [identity, setIdentity] = useState<IdentityProfile | null>(null)
   const [memoryTiers, setMemoryTiers] = useState<MemoryTierStats | null>(null)
   const [sessionId, setSessionId] = useState<string>(() => generateSessionId())
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -227,6 +251,32 @@ export function BackendProvider({ children }: { children: ReactNode }) {
       if (res.ok) setSoul(await res.json())
     } catch {
       // health polling already reflects offline state
+    }
+  }, [])
+
+  const fetchIdentity = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/identity`, { signal: AbortSignal.timeout(3000) })
+      if (res.ok) setIdentity(await res.json())
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [])
+
+  const updateIdentity = useCallback(async (field: string, value: unknown) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/identity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field, value }),
+      })
+      if (res.ok) {
+        setIdentity(await res.json())
+        return true
+      }
+      return false
+    } catch {
+      return false
     }
   }, [])
 
@@ -316,13 +366,14 @@ export function BackendProvider({ children }: { children: ReactNode }) {
     fetchSkills()
     fetchModels()
     fetchSoul()
+    fetchIdentity()
     const id = setInterval(() => {
       fetchHealth()
       fetchAgents()
       fetchLoops()
     }, 5000)
     return () => clearInterval(id)
-  }, [fetchHealth, fetchAgents, fetchLoops, fetchSkills, fetchModels, fetchSoul])
+  }, [fetchHealth, fetchAgents, fetchLoops, fetchSkills, fetchModels, fetchSoul, fetchIdentity])
 
   const handleSocketMessage = useCallback(
     (data: unknown) => {
@@ -358,6 +409,7 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         skillsByDomain,
         models,
         soul,
+        identity,
         memoryTiers,
         sessionId,
         suggestions,
@@ -369,6 +421,8 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         refreshModels: fetchModels,
         refreshLoops: fetchLoops,
         refreshSoul: fetchSoul,
+        refreshIdentity: fetchIdentity,
+        updateIdentity,
         refreshMemoryTiers: fetchMemoryTiers,
         refreshSuggestions: fetchSuggestions,
         refreshQueue: fetchQueue,

@@ -42,6 +42,22 @@
   gap: 16px;
 }
 
+.profile-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.profile-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-purple);
+}
+
 .status-pill {
   display: flex;
   align-items: center;
