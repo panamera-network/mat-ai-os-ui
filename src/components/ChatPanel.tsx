@@ -125,8 +125,12 @@ export default function ChatPanel() {
   const [elapsedMs, setElapsedMs] = useState(0)
   const [attachedFile, setAttachedFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const pendingStartRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   useEffect(() => {
     if (!pending) return
@@ -144,7 +148,25 @@ export default function ChatPanel() {
     setResolvedIds(new Set())
   }
 
-  const sendTask = async (task: string, file: File | null) => {
+  const playTtsResponse = async (text: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/voice/synthesize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.addEventListener('ended', () => URL.revokeObjectURL(url))
+      await audio.play()
+    } catch {
+      // TTS is a nice-to-have for voice turns; silently skip if it's not configured/reachable
+    }
+  }
+
+  const sendTask = async (task: string, file: File | null, autoSpeak = false) => {
     setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task, attachmentName: file?.name }])
     setPending(true)
     const startedAt = Date.now()
@@ -178,6 +200,7 @@ export default function ChatPanel() {
           feedbackTaskId: data.feedback_task_id ?? undefined,
         },
       ])
+      if (autoSpeak) await playTtsResponse(data.result)
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -288,6 +311,64 @@ export default function ChatPanel() {
     e.preventDefault()
     setIsDragging(false)
     handleFilePicked(e.dataTransfer.files?.[0])
+  }
+
+  const transcribeAndSend = async (blob: Blob) => {
+    setIsTranscribing(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', blob, 'recording.webm')
+      const res = await fetch(`${API_BASE_URL}/voice/transcribe`, { method: 'POST', body: formData })
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+      const data: { text: string } = await res.json()
+      const text = data.text.trim()
+      if (!text) {
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), role: 'governance', govKind: 'rejected', text: "Couldn't make out any speech in that recording." },
+        ])
+        return
+      }
+      setInput(text)
+      await sendTask(text, null, true)
+      setInput('')
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), role: 'governance', govKind: 'rejected', text: 'Could not transcribe — is the backend running and STT configured?' },
+      ])
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop()
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      audioChunksRef.current = []
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop())
+        setIsRecording(false)
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        if (blob.size > 0) transcribeAndSend(blob)
+      }
+      mediaRecorderRef.current = recorder
+      recorder.start()
+      setIsRecording(true)
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), role: 'governance', govKind: 'rejected', text: 'Could not access the microphone — check browser permissions.' },
+      ])
+    }
   }
 
   useEffect(() => {
@@ -548,6 +629,16 @@ export default function ChatPanel() {
             e.target.value = ''
           }}
         />
+        <button
+          type="button"
+          className={`mic-toggle-btn ${isRecording ? 'recording' : ''}`}
+          onClick={toggleRecording}
+          aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
+          title={isRecording ? 'Stop recording' : 'Record voice message'}
+          disabled={pending || isTranscribing}
+        >
+          {isTranscribing ? '…' : isRecording ? '⏹️' : '🎤'}
+        </button>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

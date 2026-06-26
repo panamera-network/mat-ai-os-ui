@@ -126,6 +126,43 @@
   cursor: default;
 }
 
+.mic-toggle-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mic-toggle-btn:hover {
+  border-color: var(--accent-purple);
+}
+
+.mic-toggle-btn.recording {
+  border-color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.15);
+  animation: mic-recording-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mic-recording-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.mic-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .chat-message {
   position: relative;
   font-size: 12px;
