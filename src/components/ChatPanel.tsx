@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { API_BASE_URL } from '../config'
 import { useBackend } from '../context/BackendContext'
 import './ChatPanel.css'
@@ -47,6 +47,20 @@ interface ChatMessage {
   durationMs?: number
   feedbackTaskId?: string
   feedbackRating?: number
+  attachmentName?: string
+}
+
+const ACCEPTED_ATTACHMENT_EXTENSIONS = ['.pdf', '.txt', '.md', '.csv', '.png', '.jpg', '.jpeg']
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function isAcceptedAttachment(file: File): boolean {
+  const lower = file.name.toLowerCase()
+  return ACCEPTED_ATTACHMENT_EXTENSIONS.some((ext) => lower.endsWith(ext))
 }
 
 interface BriefingPayload {
@@ -109,7 +123,10 @@ export default function ChatPanel() {
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [resolvedIds, setResolvedIds] = useState<Set<number>>(new Set())
   const [elapsedMs, setElapsedMs] = useState(0)
+  const [attachedFile, setAttachedFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const pendingStartRef = useRef<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (!pending) return
@@ -127,16 +144,26 @@ export default function ChatPanel() {
     setResolvedIds(new Set())
   }
 
-  const sendTask = async (task: string) => {
-    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task }])
+  const sendTask = async (task: string, file: File | null) => {
+    setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task, attachmentName: file?.name }])
     setPending(true)
     const startedAt = Date.now()
     try {
-      const res = await fetch(`${API_BASE_URL}/task`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, session_id: sessionId }),
-      })
+      let res: Response
+      if (file) {
+        const formData = new FormData()
+        formData.append('task', task)
+        formData.append('session_id', sessionId)
+        formData.append('priority', 'normal')
+        formData.append('file', file)
+        res = await fetch(`${API_BASE_URL}/task/upload`, { method: 'POST', body: formData })
+      } else {
+        res = await fetch(`${API_BASE_URL}/task`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, session_id: sessionId }),
+        })
+      }
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
       const data: { result: string; collaboration?: CollaborationData | null; feedback_task_id?: string | null } =
         await res.json()
@@ -234,13 +261,33 @@ export default function ChatPanel() {
 
   const send = async () => {
     const value = input.trim()
-    if (!value || pending) return
+    if ((!value && !attachedFile) || pending) return
     setInput('')
+    const file = attachedFile
+    setAttachedFile(null)
     if (activeMode === 'learn') {
       await sendLearn(value)
     } else {
-      await sendTask(value)
+      await sendTask(value || `Attached file: ${file?.name ?? ''}`, file)
     }
+  }
+
+  const handleFilePicked = (file: File | undefined) => {
+    if (!file) return
+    if (!isAcceptedAttachment(file)) {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), role: 'governance', govKind: 'rejected', text: `Unsupported file type: ${file.name} (PDF, TXT, MD, CSV, PNG, JPG only)` },
+      ])
+      return
+    }
+    setAttachedFile(file)
+  }
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+    handleFilePicked(e.dataTransfer.files?.[0])
   }
 
   useEffect(() => {
@@ -301,7 +348,16 @@ export default function ChatPanel() {
           + New Conversation
         </button>
       </div>
-      <div className="chat-messages">
+      <div
+        className={`chat-messages ${isDragging ? 'drag-active' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
+        {isDragging && <div className="chat-drop-overlay">Drop file to attach (PDF, TXT, MD, CSV, PNG, JPG)</div>}
         {messages.length === 0 && <div className="empty-hint">Ask MAT.AI anything</div>}
         {messages.map((m) => {
           if (m.role === 'briefing') {
@@ -392,6 +448,7 @@ export default function ChatPanel() {
 
           return (
             <div key={m.id} className={`chat-message ${m.role}`}>
+              {m.attachmentName && <div className="chat-attachment-chip">📎 {m.attachmentName}</div>}
               {m.text}
               {m.role === 'orchestrator' && (
                 <>
@@ -433,6 +490,17 @@ export default function ChatPanel() {
         )}
       </div>
 
+      {attachedFile && (
+        <div className="chat-attachment-preview">
+          <span className="chat-attachment-preview-name">
+            📎 {attachedFile.name} <span className="chat-attachment-preview-size">({formatFileSize(attachedFile.size)})</span>
+          </span>
+          <button type="button" className="chat-attachment-remove-btn" onClick={() => setAttachedFile(null)} aria-label="Remove attachment">
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="chat-input-row">
         {modePickerOpen && (
           <div className="mode-picker">
@@ -460,6 +528,26 @@ export default function ChatPanel() {
         >
           +
         </button>
+        <button
+          type="button"
+          className="attach-toggle-btn"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Attach file"
+          title="Attach a file"
+          disabled={pending}
+        >
+          📎
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_ATTACHMENT_EXTENSIONS.join(',')}
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            handleFilePicked(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

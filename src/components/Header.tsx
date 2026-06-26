@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import ProfilePanel from './ProfilePanel'
 import GoalsPanel from './GoalsPanel'
+import ExportImportMenu from './ExportImportMenu'
+import ModeSelector from './ModeSelector'
+import NotificationCenter from './NotificationCenter'
 import './Header.css'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
   const [profileOpen, setProfileOpen] = useState(false)
   const [goalsOpen, setGoalsOpen] = useState(false)
-  const { online } = useBackend()
+  const [notifOpen, setNotifOpen] = useState(false)
+  const { online, unreadNotificationCount } = useBackend()
   const status = online ? 'online' : 'offline'
 
   useEffect(() => {
@@ -24,11 +28,23 @@ export default function Header() {
       </div>
       <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
       <div className="app-header-right">
+        <ModeSelector />
         <button type="button" className="profile-btn" onClick={() => setGoalsOpen(true)}>
           Goals
         </button>
         <button type="button" className="profile-btn" onClick={() => setProfileOpen(true)}>
           Profile
+        </button>
+        <ExportImportMenu />
+        <button
+          type="button"
+          className="header-bell-btn"
+          onClick={() => setNotifOpen((open) => !open)}
+          aria-label="Notifications"
+          title="Notifications"
+        >
+          🔔
+          {unreadNotificationCount > 0 && <span className="header-icon-badge">{unreadNotificationCount}</span>}
         </button>
         <div className={`status-pill ${status}`}>
           <span className="status-dot" />
@@ -40,6 +56,7 @@ export default function Header() {
       </div>
       {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
       {goalsOpen && <GoalsPanel onClose={() => setGoalsOpen(false)} />}
+      {notifOpen && <NotificationCenter onClose={() => setNotifOpen(false)} />}
     </header>
   )
 }

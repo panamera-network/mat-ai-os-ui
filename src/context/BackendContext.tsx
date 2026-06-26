@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { API_BASE_URL } from '../config'
 import { useSocket } from '../hooks/useSocket'
+import { useToast } from './ToastContext'
 
 export interface Agent {
   agent_id: string
@@ -85,6 +86,34 @@ export interface IdentityProfile {
     work_hours: string
   }
   timezone: string
+  active_mode: 'work' | 'trading' | 'learning' | string
+}
+
+// Mirrors main.py's MODE_DOMAINS — which domains BrainView highlights for the active mode.
+export const MODE_DOMAINS: Record<string, string[]> = {
+  work: ['coding', 'business'],
+  trading: ['trading'],
+  learning: ['research', 'ai_automation'],
+}
+
+export type NotificationType =
+  | 'task_queued'
+  | 'task_completed'
+  | 'task_failed'
+  | 'loop_triggered'
+  | 'loop_completed'
+  | 'agent_active'
+  | 'agent_idle'
+  | 'suggestion'
+  | 'alert'
+
+export interface AppNotification {
+  id: string
+  type: NotificationType
+  message: string
+  timestamp: string
+  read: boolean
+  pinned: boolean
 }
 
 export interface Suggestion {
@@ -112,11 +141,31 @@ export interface QueueTask {
 }
 
 interface OrchestratorEvent {
-  type: 'agent_active' | 'agent_idle' | 'task_started' | 'task_completed'
+  type:
+    | 'agent_active'
+    | 'agent_idle'
+    | 'task_started'
+    | 'task_completed'
+    | 'task_queued'
+    | 'task_failed'
+    | 'loop_triggered'
+    | 'loop_completed'
   agent_id?: string
   domain?: string
   task?: string
   result?: string
+  task_id?: string
+  name?: string
+  error?: string
+  success?: boolean
+}
+
+interface SystemAlert {
+  id: string
+  kind: string
+  message: string
+  raised_at: string
+  updated_at: string
 }
 
 interface BackendState {
@@ -133,6 +182,12 @@ interface BackendState {
   suggestions: Suggestion[]
   queueTasks: QueueTask[]
   activeDomains: Set<string>
+  modeDomains: Set<string>
+  notifications: AppNotification[]
+  unreadNotificationCount: number
+  dismissNotification: (id: string) => void
+  pinNotification: (id: string) => void
+  markAllNotificationsRead: () => void
   refreshAgents: () => Promise<void>
   refreshSkills: () => Promise<void>
   refreshHealth: () => Promise<void>
@@ -168,6 +223,12 @@ const BackendContext = createContext<BackendState>({
   suggestions: [],
   queueTasks: [],
   activeDomains: new Set(),
+  modeDomains: new Set(),
+  notifications: [],
+  unreadNotificationCount: 0,
+  dismissNotification: () => {},
+  pinNotification: () => {},
+  markAllNotificationsRead: () => {},
   refreshAgents: async () => {},
   refreshSkills: async () => {},
   refreshHealth: async () => {},
@@ -184,7 +245,12 @@ const BackendContext = createContext<BackendState>({
   newConversation: () => {},
 })
 
+// Event types noisy enough (agent_active/idle fire on every task) that they belong in
+// the notification panel but would be annoying as a popup toast too.
+const TOAST_WORTHY: ReadonlySet<NotificationType> = new Set(['task_failed', 'loop_completed', 'suggestion', 'alert'])
+
 export function BackendProvider({ children }: { children: ReactNode }) {
+  const { showToast } = useToast()
   const [online, setOnline] = useState(false)
   const [health, setHealth] = useState<Health | null>(null)
   const [agents, setAgents] = useState<Agent[]>([])
@@ -198,6 +264,42 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [queueTasks, setQueueTasks] = useState<QueueTask[]>([])
   const [activeDomains, setActiveDomains] = useState<Set<string>>(new Set())
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const knownAlertIds = useRef<Set<string>>(new Set())
+  const knownSuggestionIds = useRef<Set<string>>(new Set())
+  const seededSuggestions = useRef(false)
+
+  const modeDomains = identity ? new Set(MODE_DOMAINS[identity.active_mode] ?? []) : new Set<string>()
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length
+
+  const pushNotification = useCallback(
+    (type: NotificationType, message: string) => {
+      const id = `${Date.now()}-${Math.random()}`
+      setNotifications((prev) =>
+        [{ id, type, message, timestamp: new Date().toISOString(), read: false, pinned: false }, ...prev].slice(0, 100),
+      )
+      // Auto-dismiss the panel entry after 5s unless the user pinned it.
+      setTimeout(() => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id || n.pinned))
+      }, 5000)
+      if (TOAST_WORTHY.has(type)) {
+        showToast(message, type === 'task_failed' || type === 'alert' ? 'error' : 'info')
+      }
+    },
+    [showToast],
+  )
+
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id || n.pinned))
+  }, [])
+
+  const pinNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)))
+  }, [])
+
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }, [])
 
   const fetchHealth = useCallback(async () => {
     try {
@@ -294,12 +396,37 @@ export function BackendProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${API_BASE_URL}/suggestions`, { signal: AbortSignal.timeout(3000) })
       if (res.ok) {
         const data: { suggestions: Suggestion[] } = await res.json()
+        if (seededSuggestions.current) {
+          for (const s of data.suggestions) {
+            if (!knownSuggestionIds.current.has(s.id)) {
+              pushNotification('suggestion', `New suggestion: ${s.title}`)
+            }
+          }
+        }
+        knownSuggestionIds.current = new Set(data.suggestions.map((s) => s.id))
+        seededSuggestions.current = true
         setSuggestions(data.suggestions)
       }
     } catch {
       // health polling already reflects offline state
     }
-  }, [])
+  }, [pushNotification])
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/alerts`, { signal: AbortSignal.timeout(3000) })
+      if (!res.ok) return
+      const data: { alerts: SystemAlert[] } = await res.json()
+      for (const alert of data.alerts) {
+        if (!knownAlertIds.current.has(alert.id)) {
+          pushNotification('alert', alert.message)
+        }
+      }
+      knownAlertIds.current = new Set(data.alerts.map((a) => a.id))
+    } catch {
+      // health polling already reflects offline state
+    }
+  }, [pushNotification])
 
   const fetchQueue = useCallback(async () => {
     try {
@@ -354,6 +481,12 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   }, [fetchSuggestions])
 
   useEffect(() => {
+    fetchAlerts()
+    const id = setInterval(fetchAlerts, 30000)
+    return () => clearInterval(id)
+  }, [fetchAlerts])
+
+  useEffect(() => {
     fetchQueue()
     const id = setInterval(fetchQueue, 5000)
     return () => clearInterval(id)
@@ -383,6 +516,7 @@ export function BackendProvider({ children }: { children: ReactNode }) {
       if (event.type === 'agent_active' && event.domain) {
         setActiveDomains((prev) => new Set(prev).add(event.domain!))
         fetchAgents()
+        pushNotification('agent_active', `Agent active in ${event.domain}`)
       } else if (event.type === 'agent_idle' && event.domain) {
         setActiveDomains((prev) => {
           const next = new Set(prev)
@@ -390,11 +524,24 @@ export function BackendProvider({ children }: { children: ReactNode }) {
           return next
         })
         fetchAgents()
+        pushNotification('agent_idle', `Agent idle (${event.domain})`)
       } else if (event.type === 'task_completed') {
         fetchHealth()
+        pushNotification('task_completed', 'Task completed')
+      } else if (event.type === 'task_queued') {
+        pushNotification('task_queued', `Task queued: ${event.task ?? event.task_id ?? ''}`.trim())
+      } else if (event.type === 'task_failed') {
+        pushNotification('task_failed', `Task failed: ${event.error ?? 'unknown error'}`)
+      } else if (event.type === 'loop_triggered') {
+        pushNotification('loop_triggered', `Loop triggered: ${event.name ?? event.task ?? ''}`.trim())
+      } else if (event.type === 'loop_completed') {
+        pushNotification(
+          'loop_completed',
+          `Loop ${event.success === false ? 'failed' : 'completed'}: ${event.name ?? ''}`.trim(),
+        )
       }
     },
-    [fetchAgents, fetchHealth],
+    [fetchAgents, fetchHealth, pushNotification],
   )
 
   useSocket(handleSocketMessage)
@@ -415,6 +562,12 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         suggestions,
         queueTasks,
         activeDomains,
+        modeDomains,
+        notifications,
+        unreadNotificationCount,
+        dismissNotification,
+        pinNotification,
+        markAllNotificationsRead,
         refreshAgents: fetchAgents,
         refreshSkills: fetchSkills,
         refreshHealth: fetchHealth,

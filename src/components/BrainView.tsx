@@ -169,7 +169,7 @@ function buildKnowledgeGraph(
 }
 
 export default function BrainView() {
-  const { activeDomains } = useBackend()
+  const { activeDomains, modeDomains } = useBackend()
   const [containerRef, { width, height }] = useElementSize<HTMLDivElement>()
   const [zoom, setZoom] = useState(1)
   const [origin, setOrigin] = useState({ x: 50, y: 50 })
@@ -368,10 +368,11 @@ export default function BrainView() {
           {graph.map((n) => {
             const p = pos(n.id)
             const active = mode === 'skills' && n.kind === 'domain' && activeDomains.has(n.id)
+            const modeActive = mode === 'skills' && n.kind === 'domain' && !active && modeDomains.has(n.id)
             return (
               <div
                 key={n.id}
-                className={`brain-node ${n.kind} ${active ? 'active' : ''} ${hoveredId === n.id ? 'hovered' : ''}`}
+                className={`brain-node ${n.kind} ${active ? 'active' : ''} ${modeActive ? 'mode-active' : ''} ${hoveredId === n.id ? 'hovered' : ''}`}
                 style={{ left: `${p.x}px`, top: `${p.y}px` }}
                 onMouseEnter={(e) => handleNodeHover(n.id, e)}
                 onMouseLeave={() => setHoveredId((current) => (current === n.id ? null : current))}
@@ -382,9 +383,11 @@ export default function BrainView() {
                   style={
                     active
                       ? { background: n.color, boxShadow: `0 0 16px 4px ${n.color}88` }
-                      : n.kind === 'agent' || n.kind === 'domain'
-                        ? { background: n.color }
-                        : undefined
+                      : modeActive
+                        ? { background: n.color, boxShadow: `0 0 0 2px ${n.color}` }
+                        : n.kind === 'agent' || n.kind === 'domain'
+                          ? { background: n.color }
+                          : undefined
                   }
                 >
                   {n.kind === 'core' ? 'M' : null}
