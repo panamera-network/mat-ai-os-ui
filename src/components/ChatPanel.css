@@ -81,6 +81,53 @@
   vertical-align: middle;
 }
 
+.chat-message.briefing {
+  align-self: center;
+  max-width: 90%;
+  white-space: pre-line;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.chat-feedback-row {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.chat-feedback-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.chat-feedback-btn:hover {
+  opacity: 1;
+}
+
+.chat-feedback-btn:disabled {
+  cursor: default;
+}
+
+.chat-feedback-btn.active {
+  opacity: 1;
+}
+
+.chat-feedback-btn.active.up {
+  border-color: var(--accent-green);
+}
+
+.chat-feedback-btn.active.down {
+  border-color: var(--accent-red);
+}
+
 .chat-message.governance {
   font-size: 12px;
 }

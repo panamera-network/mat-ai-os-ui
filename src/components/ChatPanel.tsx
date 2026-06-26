@@ -39,13 +39,28 @@ interface CollaborationData {
 
 interface ChatMessage {
   id: number
-  role: 'user' | 'orchestrator' | 'governance'
+  role: 'user' | 'orchestrator' | 'governance' | 'briefing'
   text: string
   govKind?: GovernanceKind
   suggestion?: LearnSuggestion
   collaboration?: CollaborationData
   durationMs?: number
+  feedbackTaskId?: string
+  feedbackRating?: number
 }
+
+interface BriefingPayload {
+  greeting: string
+  generated_at: string
+  goals: { active_count: number; average_progress: number }
+  pending_tasks: number
+  active_loops: number
+  total_loops: number
+  suggestions_count: number
+  alerts: unknown[]
+}
+
+const LAST_SEEN_BRIEFING_KEY = 'mat-ai-os-last-seen-briefing'
 
 function formatDuration(ms: number): string {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
@@ -123,7 +138,8 @@ export default function ChatPanel() {
         body: JSON.stringify({ task, session_id: sessionId }),
       })
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data: { result: string; collaboration?: CollaborationData | null } = await res.json()
+      const data: { result: string; collaboration?: CollaborationData | null; feedback_task_id?: string | null } =
+        await res.json()
       setMessages((prev) => [
         ...prev,
         {
@@ -132,6 +148,7 @@ export default function ChatPanel() {
           text: data.result,
           collaboration: data.collaboration ?? undefined,
           durationMs: Date.now() - startedAt,
+          feedbackTaskId: data.feedback_task_id ?? undefined,
         },
       ])
     } catch {
@@ -226,6 +243,47 @@ export default function ChatPanel() {
     }
   }
 
+  useEffect(() => {
+    const checkBriefing = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/briefing`, { signal: AbortSignal.timeout(3000) })
+        if (!res.ok) return
+        const data: { daily: BriefingPayload | null } = await res.json()
+        if (!data.daily) return
+        const lastSeen = localStorage.getItem(LAST_SEEN_BRIEFING_KEY)
+        if (lastSeen === data.daily.generated_at) return
+        localStorage.setItem(LAST_SEEN_BRIEFING_KEY, data.daily.generated_at)
+        const b = data.daily
+        const lines = [
+          `${b.greeting}!`,
+          `Goals: ${b.goals.active_count} active, avg progress ${b.goals.average_progress}%`,
+          `Tasks waiting: ${b.pending_tasks}`,
+          `Loops: ${b.active_loops}/${b.total_loops} active`,
+          `Suggestions: ${b.suggestions_count}`,
+        ]
+        if (b.alerts.length > 0) lines.push(`Alerts: ${b.alerts.length} active`)
+        setMessages((prev) => [{ id: Date.now(), role: 'briefing', text: lines.join('\n') }, ...prev])
+      } catch {
+        // briefing is a nice-to-have; silently skip if the backend isn't reachable yet
+      }
+    }
+    checkBriefing()
+  }, [])
+
+  const submitFeedback = async (messageId: number, taskId: string, rating: number) => {
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, feedbackRating: rating } : m)))
+    try {
+      await fetch(`${API_BASE_URL}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, rating }),
+      })
+    } catch {
+      // the optimistic UI update already reflects the user's choice; a failed POST
+      // just means the rating wasn't recorded server-side, not worth surfacing
+    }
+  }
+
   const copyMessage = async (message: ChatMessage) => {
     try {
       await navigator.clipboard.writeText(message.text)
@@ -246,6 +304,14 @@ export default function ChatPanel() {
       <div className="chat-messages">
         {messages.length === 0 && <div className="empty-hint">Ask MAT.AI anything</div>}
         {messages.map((m) => {
+          if (m.role === 'briefing') {
+            return (
+              <div key={m.id} className="chat-message briefing">
+                {m.text}
+              </div>
+            )
+          }
+
           if (m.role === 'governance') {
             if (m.govKind === 'suggestion' && m.suggestion) {
               const s = m.suggestion
@@ -333,6 +399,28 @@ export default function ChatPanel() {
                   <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
                     {copiedId === m.id ? 'Copied!' : '📋'}
                   </button>
+                  {m.feedbackTaskId && (
+                    <div className="chat-feedback-row">
+                      <button
+                        type="button"
+                        className={`chat-feedback-btn ${m.feedbackRating === 5 ? 'active up' : ''}`}
+                        disabled={m.feedbackRating !== undefined}
+                        onClick={() => submitFeedback(m.id, m.feedbackTaskId!, 5)}
+                        aria-label="Good response"
+                      >
+                        👍
+                      </button>
+                      <button
+                        type="button"
+                        className={`chat-feedback-btn ${m.feedbackRating !== undefined && m.feedbackRating <= 2 ? 'active down' : ''}`}
+                        disabled={m.feedbackRating !== undefined}
+                        onClick={() => submitFeedback(m.id, m.feedbackTaskId!, 1)}
+                        aria-label="Poor response"
+                      >
+                        👎
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

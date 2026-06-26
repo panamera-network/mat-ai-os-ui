@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import ProfilePanel from './ProfilePanel'
+import GoalsPanel from './GoalsPanel'
 import './Header.css'
 
 export default function Header() {
   const [time, setTime] = useState(new Date())
   const [profileOpen, setProfileOpen] = useState(false)
+  const [goalsOpen, setGoalsOpen] = useState(false)
   const { online } = useBackend()
   const status = online ? 'online' : 'offline'
 
@@ -22,6 +24,9 @@ export default function Header() {
       </div>
       <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
       <div className="app-header-right">
+        <button type="button" className="profile-btn" onClick={() => setGoalsOpen(true)}>
+          Goals
+        </button>
         <button type="button" className="profile-btn" onClick={() => setProfileOpen(true)}>
           Profile
         </button>
@@ -34,6 +39,7 @@ export default function Header() {
         </div>
       </div>
       {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
+      {goalsOpen && <GoalsPanel onClose={() => setGoalsOpen(false)} />}
     </header>
   )
 }
