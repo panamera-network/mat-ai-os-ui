@@ -15,6 +15,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   agent_idle: '😴',
   suggestion: '💡',
   alert: '🚨',
+  system_notification: '🔔',
 }
 
 function formatTime(iso: string): string {

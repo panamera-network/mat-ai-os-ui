@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 
-export function useElementSize<T extends HTMLElement>(): [RefObject<T | null>, { width: number; height: number }] {
-  const ref = useRef<T | null>(null)
+export function useElementSize<T extends HTMLElement>(): [RefObject<T>, { width: number; height: number }] {
+  const ref = useRef<T>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
 
   useEffect(() => {

@@ -76,6 +76,9 @@ interface BriefingPayload {
 
 const LAST_SEEN_BRIEFING_KEY = 'mat-ai-os-last-seen-briefing'
 
+const QUEUE_POLL_INTERVAL_MS = 2000
+const QUEUE_POLL_MAX_ATTEMPTS = 300 // ~10 minutes, then point at the Queue panel instead
+
 function formatDuration(ms: number): string {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
 }
@@ -166,6 +169,50 @@ export default function ChatPanel() {
     }
   }
 
+  // When POST /task came back {queued: true} (orchestrator busy), the result arrives via
+  // the background queue worker — poll GET /queue/{task_id} until it lands, then show it
+  // in the conversation like any other reply.
+  const pollQueuedTask = async (taskId: string, startedAt: number, autoSpeak: boolean) => {
+    for (let attempt = 0; attempt < QUEUE_POLL_MAX_ATTEMPTS; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, QUEUE_POLL_INTERVAL_MS))
+      let record: { status: string; result: string | null; error: string | null }
+      try {
+        const res = await fetch(`${API_BASE_URL}/queue/${taskId}`)
+        if (!res.ok) continue
+        record = await res.json()
+      } catch {
+        continue
+      }
+      if (record.status === 'completed') {
+        const text = record.result ?? ''
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now(), role: 'orchestrator', text, durationMs: Date.now() - startedAt },
+        ])
+        if (autoSpeak && text) await playTtsResponse(text)
+        return
+      }
+      if (record.status === 'failed' || record.status === 'cancelled') {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            role: 'orchestrator',
+            text:
+              record.status === 'cancelled'
+                ? 'The queued task was cancelled before it ran.'
+                : `The queued task failed: ${record.error ?? 'unknown error'}`,
+          },
+        ])
+        return
+      }
+    }
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), role: 'orchestrator', text: 'Still waiting on the queued task — check the Queue panel for its result.' },
+    ])
+  }
+
   const sendTask = async (task: string, file: File | null, autoSpeak = false) => {
     setMessages((prev) => [...prev, { id: Date.now(), role: 'user', text: task, attachmentName: file?.name }])
     setPending(true)
@@ -187,20 +234,37 @@ export default function ChatPanel() {
         })
       }
       if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-      const data: { result: string; collaboration?: CollaborationData | null; feedback_task_id?: string | null } =
-        await res.json()
+      const data: {
+        result: string | null
+        queued?: boolean
+        task_id?: string | null
+        collaboration?: CollaborationData | null
+        feedback_task_id?: string | null
+      } = await res.json()
+      if (data.queued && data.task_id) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: 'orchestrator',
+            text: 'The Orchestrator is busy with another task, so this one was queued — the result will appear here once it runs.',
+          },
+        ])
+        pollQueuedTask(data.task_id, startedAt, autoSpeak)
+        return
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           role: 'orchestrator',
-          text: data.result,
+          text: data.result ?? '',
           collaboration: data.collaboration ?? undefined,
           durationMs: Date.now() - startedAt,
           feedbackTaskId: data.feedback_task_id ?? undefined,
         },
       ])
-      if (autoSpeak) await playTtsResponse(data.result)
+      if (autoSpeak && data.result) await playTtsResponse(data.result)
     } catch {
       setMessages((prev) => [
         ...prev,

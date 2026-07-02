@@ -10,7 +10,7 @@
     "build": "tsc -b tsconfig.app.json && vite build && electron-builder",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"npm:electron:start\"",
-    "electron:start": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
+    "electron:start": "wait-on tcp:7777 && cross-env NODE_ENV=development electron .",
     "lint": "eslint ."
   },
   "dependencies": {

@@ -106,6 +106,7 @@ export type NotificationType =
   | 'agent_idle'
   | 'suggestion'
   | 'alert'
+  | 'system_notification'
 
 export interface AppNotification {
   id: string
@@ -150,6 +151,7 @@ interface OrchestratorEvent {
     | 'task_failed'
     | 'loop_triggered'
     | 'loop_completed'
+    | 'system_notification'
   agent_id?: string
   domain?: string
   task?: string
@@ -158,6 +160,10 @@ interface OrchestratorEvent {
   name?: string
   error?: string
   success?: boolean
+  // system_notification payload (a captured Windows toast — see core/notification_reader.py)
+  app?: string
+  title?: string
+  message?: string
 }
 
 interface SystemAlert {
@@ -247,7 +253,13 @@ const BackendContext = createContext<BackendState>({
 
 // Event types noisy enough (agent_active/idle fire on every task) that they belong in
 // the notification panel but would be annoying as a popup toast too.
-const TOAST_WORTHY: ReadonlySet<NotificationType> = new Set(['task_failed', 'loop_completed', 'suggestion', 'alert'])
+const TOAST_WORTHY: ReadonlySet<NotificationType> = new Set([
+  'task_failed',
+  'loop_completed',
+  'suggestion',
+  'alert',
+  'system_notification',
+])
 
 export function BackendProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast()
@@ -539,6 +551,9 @@ export function BackendProvider({ children }: { children: ReactNode }) {
           'loop_completed',
           `Loop ${event.success === false ? 'failed' : 'completed'}: ${event.name ?? ''}`.trim(),
         )
+      } else if (event.type === 'system_notification') {
+        const label = [event.app, event.title, event.message].filter(Boolean).join(' — ')
+        pushNotification('system_notification', label || 'System notification')
       }
     },
     [fetchAgents, fetchHealth, pushNotification],
