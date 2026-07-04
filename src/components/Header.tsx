@@ -5,9 +5,15 @@ import GoalsPanel from './GoalsPanel'
 import ExportImportMenu from './ExportImportMenu'
 import ModeSelector from './ModeSelector'
 import NotificationCenter from './NotificationCenter'
+import type { WorkspaceView } from '../App'
 import './Header.css'
 
-export default function Header() {
+interface HeaderProps {
+  view: WorkspaceView
+  onViewChange: (view: WorkspaceView) => void
+}
+
+export default function Header({ view, onViewChange }: HeaderProps) {
   const [time, setTime] = useState(new Date())
   const [profileOpen, setProfileOpen] = useState(false)
   const [goalsOpen, setGoalsOpen] = useState(false)
@@ -28,6 +34,22 @@ export default function Header() {
       </div>
       <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
       <div className="app-header-right">
+        <div className="workspace-toggle">
+          <button
+            type="button"
+            className={`workspace-toggle-btn ${view === 'brain' ? 'active' : ''}`}
+            onClick={() => onViewChange('brain')}
+          >
+            🧠 Brain
+          </button>
+          <button
+            type="button"
+            className={`workspace-toggle-btn ${view === 'creator' ? 'active' : ''}`}
+            onClick={() => onViewChange('creator')}
+          >
+            🎬 Creator
+          </button>
+        </div>
         <ModeSelector />
         <button type="button" className="profile-btn" onClick={() => setGoalsOpen(true)}>
           Goals
