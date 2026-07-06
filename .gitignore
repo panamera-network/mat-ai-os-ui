@@ -5,3 +5,7 @@ release
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# Local secrets (VITE_MAT_API_KEY) — see .env.example
+.env
+.env.local
