@@ -1,0 +1,270 @@
+/* Dev Workspace v1 — reuses .left-panel/.center-panel/.right-panel/.panel-card
+   from styles/layout.css for the outer chrome; this file only adds
+   dev-specific card/list/feed styling on top of the existing theme vars. */
+
+.dev-sidebar .panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dev-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dev-project-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
+.dev-project-row:hover {
+  border-color: var(--accent-blue);
+}
+
+.dev-project-row.active {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.dev-project-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dev-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.dev-status-badge.status-draft {
+  background: rgba(139, 139, 158, 0.18);
+  color: var(--text-secondary);
+}
+
+.dev-status-badge.status-in_progress {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--accent-amber);
+}
+
+.dev-status-badge.status-ready {
+  background: rgba(34, 197, 94, 0.18);
+  color: var(--accent-green);
+}
+
+.dev-new-btn {
+  width: 100%;
+}
+
+/* --- Canvas (center) --- */
+.dev-canvas {
+  padding: 14px;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.dev-canvas-empty {
+  margin: auto;
+}
+
+.dev-canvas-header h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.dev-canvas-goal {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.dev-card-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dev-output-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-card-command.state-executed {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.dev-card-command.state-failed,
+.dev-card-command.state-denied {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dev-card-command.state-pending {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.dev-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dev-card-icon {
+  font-size: 14px;
+}
+
+.dev-card-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dev-card-status {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 8px;
+  padding: 1px 7px;
+}
+
+.dev-card-status.status-executed {
+  color: var(--accent-green);
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.dev-card-status.status-failed,
+.dev-card-status.status-denied {
+  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.dev-card-status.status-pending {
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.dev-card-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.dev-card-params {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  background: var(--bg-app);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dev-card-result {
+  font-size: 11px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.dev-card-error {
+  color: var(--accent-red);
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.dev-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dev-approve-btn,
+.dev-deny-btn {
+  flex: 1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.dev-approve-btn {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-green);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.dev-deny-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dev-approve-btn:disabled,
+.dev-deny-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* --- Action panel (right) --- */
+.dev-action-panel .panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dev-goal-input {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
+}
+
+.dev-run-btn {
+  width: 100%;
+}
+
+.dev-feed-card {
+  overflow-y: auto;
+}
+
+.dev-feed-line {
+  font-size: 11px;
+  color: var(--text-primary);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dev-feed-line:last-child {
+  border-bottom: none;
+}

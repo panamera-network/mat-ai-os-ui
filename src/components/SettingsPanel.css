@@ -1,11 +1,11 @@
-.profile-backdrop {
+.settings-backdrop {
   position: fixed;
   inset: 0;
   z-index: 90;
   background: rgba(0, 0, 0, 0.35);
 }
 
-.profile-panel {
+.settings-panel {
   position: fixed;
   top: 0;
   right: 0;
@@ -18,10 +18,10 @@
   box-shadow: -12px 0 32px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  animation: profile-slide-in 0.2s ease-out;
+  animation: settings-slide-in 0.2s ease-out;
 }
 
-@keyframes profile-slide-in {
+@keyframes settings-slide-in {
   from {
     transform: translateX(100%);
   }
@@ -30,7 +30,7 @@
   }
 }
 
-.profile-panel-header {
+.settings-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -38,7 +38,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-.profile-panel-header h3 {
+.settings-panel-header h3 {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
@@ -46,7 +46,7 @@
   color: var(--text-primary);
 }
 
-.profile-close-btn {
+.settings-close-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -55,20 +55,35 @@
   line-height: 1;
 }
 
-.profile-close-btn:hover {
+.settings-close-btn:hover {
   color: var(--text-primary);
 }
 
-.profile-form {
+.settings-body {
   flex: 1;
   overflow-y: auto;
   padding: 14px;
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.settings-section h4 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.profile-field {
+.settings-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -76,8 +91,8 @@
   color: var(--text-secondary);
 }
 
-.profile-field input,
-.profile-field textarea {
+.settings-field input,
+.settings-field textarea {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -88,20 +103,19 @@
   resize: vertical;
 }
 
-.profile-field input:focus,
-.profile-field textarea:focus {
+.settings-field input:focus,
+.settings-field textarea:focus {
   outline: none;
   border-color: var(--accent-purple);
 }
 
-.profile-actions {
+.settings-actions {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 6px;
 }
 
-.profile-save-btn {
+.settings-save-btn {
   flex: 1;
   padding: 7px 0;
   border-radius: 8px;
@@ -113,13 +127,35 @@
   color: var(--text-primary);
 }
 
-.profile-save-btn:disabled {
+.settings-save-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.profile-saved-note {
+.settings-saved-note {
   font-size: 11px;
   color: var(--accent-green);
   font-style: italic;
+}
+
+.settings-data-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-data-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.settings-data-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-purple);
 }

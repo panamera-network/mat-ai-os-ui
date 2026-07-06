@@ -1,10 +1,19 @@
 .app-header {
   position: relative;
   flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 6px 16px 4px;
+  gap: 12px;
+}
+
+.app-header-center {
+  grid-column: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 0 4px;
+  min-width: 0;
 }
 
 .app-header-title {
@@ -34,12 +43,12 @@
 }
 
 .app-header-right {
-  position: absolute;
-  top: 6px;
-  right: 0;
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .header-bell-btn {
@@ -57,7 +66,7 @@
   border-color: var(--accent-purple);
 }
 
-.profile-btn {
+.creator-toggle-btn {
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
@@ -68,37 +77,14 @@
   cursor: pointer;
 }
 
-.profile-btn:hover {
+.creator-toggle-btn:hover {
   color: var(--text-primary);
   border-color: var(--accent-purple);
 }
 
-.workspace-toggle {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-}
-
-.workspace-toggle-btn {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.workspace-toggle-btn:hover {
-  color: var(--text-primary);
-}
-
-.workspace-toggle-btn.active {
+.creator-toggle-btn.active {
   background: var(--accent-purple);
+  border-color: var(--accent-purple);
   color: #fff;
 }
 

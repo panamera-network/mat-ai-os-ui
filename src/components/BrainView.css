@@ -160,11 +160,6 @@
   box-shadow: 0 0 16px 4px var(--accent-purple-glow);
 }
 
-.brain-node.mode-active .brain-node-label {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
 .brain-node-label {
   font-size: 11px;
   color: var(--text-secondary);

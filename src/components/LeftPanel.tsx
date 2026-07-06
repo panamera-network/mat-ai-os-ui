@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
 import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
+import { useMcpApprovals } from '../hooks/useMcpApprovals'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance'
+type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'mcp'
 
 interface CoreLayer {
   id: LayerId
@@ -852,8 +853,55 @@ function McpExpand() {
     }
   }
 
+  const { pending, loading: approvalsLoading, refresh: refreshApprovals, approve, deny } = useMcpApprovals()
+  const [actingId, setActingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    refreshApprovals()
+  }, [refreshApprovals])
+
+  const handleApprove = async (id: string) => {
+    setActingId(id)
+    await approve(id)
+    setActingId(null)
+  }
+
+  const handleDeny = async (id: string) => {
+    setActingId(id)
+    await deny(id)
+    setActingId(null)
+  }
+
   return (
     <div className="layer-expand-body">
+      <div className="model-section-title">Pending Approvals</div>
+      {approvalsLoading && pending.length === 0 && <div className="empty-hint">Loading approvals…</div>}
+      {!approvalsLoading && pending.length === 0 && <div className="empty-hint">No commands awaiting approval</div>}
+      {pending.map((approval) => (
+        <div className="mcp-server-card" key={approval.id}>
+          <div className="mcp-server-top">
+            <span className="mcp-server-name">
+              {approval.server} · {approval.tool}
+            </span>
+          </div>
+          <pre className="mcp-server-description">{JSON.stringify(approval.params, null, 2)}</pre>
+          <div className="inline-form-actions">
+            <button type="button" onClick={() => handleApprove(approval.id)} disabled={actingId === approval.id}>
+              {actingId === approval.id ? '…' : '✓ Approve'}
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => handleDeny(approval.id)}
+              disabled={actingId === approval.id}
+            >
+              ✕ Deny
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <div className="model-section-title">Registered Servers</div>
       {loading && <div className="empty-hint">Loading MCP servers…</div>}
       {!loading && servers.length === 0 && <div className="empty-hint">No MCP servers registered yet</div>}
       {servers.map((s) => (
@@ -924,7 +972,6 @@ function McpExpand() {
 
 function LLMExpand() {
   const { models, refreshModels, refreshHealth } = useBackend()
-  const [activeTab, setActiveTab] = useState<'models' | 'mcp'>('models')
   const [selecting, setSelecting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -956,19 +1003,6 @@ function LLMExpand() {
 
   return (
     <div className="layer-expand-body">
-      <div className="expand-tabs">
-        <button type="button" className={`expand-tab ${activeTab === 'models' ? 'active' : ''}`} onClick={() => setActiveTab('models')}>
-          Models
-        </button>
-        <button type="button" className={`expand-tab ${activeTab === 'mcp' ? 'active' : ''}`} onClick={() => setActiveTab('mcp')}>
-          MCP
-        </button>
-      </div>
-
-      {activeTab === 'mcp' && <McpExpand />}
-
-      {activeTab === 'models' && (
-        <>
       <div className="active-model-banner">
         <span className="active-model-label">Active model</span>
         <span className="active-model-value">
@@ -1015,8 +1049,6 @@ function LLMExpand() {
       ))}
 
       {error && <div className="form-error">{error}</div>}
-        </>
-      )}
     </div>
   )
 }
@@ -1059,15 +1091,29 @@ const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   loops: 'Loops',
   llm: 'LLM',
   governance: 'Governance',
+  mcp: 'MCP',
 }
+
+// Polling interval for the pending-approval count badge on the Core Engine's MCP
+// button — same convention as the other 5s fallback polls in this app (e.g. Creator/
+// Dev Workspace's selected-project poll); a WebSocket-only signal isn't worth wiring
+// here since this is a small at-a-glance count, not the full approval detail.
+const MCP_APPROVAL_COUNT_POLL_MS = 5000
 
 export default function LeftPanel() {
   const { health, online, agents, loops } = useBackend()
+  const { pending: pendingApprovals, refresh: refreshApprovals } = useMcpApprovals()
   const [overlayLayer, setOverlayLayer] = useState<LayerId | null>(null)
   const [overlayTop, setOverlayTop] = useState(0)
   const [overlayLeft, setOverlayLeft] = useState(0)
   const asideRef = useRef<HTMLElement>(null)
   const activeLoops = loops.filter((loop) => loop.status === 'active')
+
+  useEffect(() => {
+    refreshApprovals()
+    const id = setInterval(refreshApprovals, MCP_APPROVAL_COUNT_POLL_MS)
+    return () => clearInterval(id)
+  }, [refreshApprovals])
 
   const layers: CoreLayer[] = [
     { id: 'memory', label: 'Memory', status: online ? 'Connected' : 'Idle', icon: '🧠', color: 'rgba(139, 92, 246, 0.15)' },
@@ -1108,6 +1154,14 @@ export default function LeftPanel() {
       icon: '🛡️',
       color: 'rgba(139, 92, 246, 0.15)',
       badge: 'live',
+    },
+    {
+      id: 'mcp',
+      label: 'MCP',
+      status: pendingApprovals.length > 0 ? `⚠ ${pendingApprovals.length} pending` : 'No pending approvals',
+      icon: '🔌',
+      color: 'rgba(239, 68, 68, 0.15)',
+      badge: pendingApprovals.length > 0 ? 'live' : undefined,
     },
   ]
 
@@ -1166,6 +1220,7 @@ export default function LeftPanel() {
                 {overlayLayer === 'loops' && <LoopsExpand />}
                 {overlayLayer === 'llm' && <LLMExpand />}
                 {overlayLayer === 'governance' && <GovernanceExpand />}
+                {overlayLayer === 'mcp' && <McpExpand />}
               </div>
             </div>
           </>

@@ -7,12 +7,16 @@ import ToastHost from './components/ToastHost'
 import CreatorProjectsSidebar from './components/creator/CreatorProjectsSidebar'
 import CreatorCanvas from './components/creator/CreatorCanvas'
 import CreatorActionPanel from './components/creator/CreatorActionPanel'
+import DevProjectsSidebar from './components/dev/DevProjectsSidebar'
+import DevCanvas from './components/dev/DevCanvas'
+import DevActionPanel from './components/dev/DevActionPanel'
 import { BackendProvider } from './context/BackendContext'
 import { ToastProvider } from './context/ToastContext'
 import { CreatorProvider } from './context/CreatorContext'
+import { DevProvider } from './context/DevContext'
 import './styles/layout.css'
 
-export type WorkspaceView = 'brain' | 'creator'
+export type WorkspaceView = 'brain' | 'creator' | 'dev'
 
 export default function App() {
   const [view, setView] = useState<WorkspaceView>('brain')
@@ -21,25 +25,35 @@ export default function App() {
     <ToastProvider>
       <BackendProvider>
         <CreatorProvider>
-          <div className="app-shell">
-            <Header view={view} onViewChange={setView} />
-            <div className="app-body">
-              {view === 'brain' ? (
-                <>
-                  <LeftPanel />
-                  <CenterPanel />
-                  <RightPanel />
-                </>
-              ) : (
-                <>
-                  <CreatorProjectsSidebar />
-                  <CreatorCanvas />
-                  <CreatorActionPanel />
-                </>
-              )}
+          <DevProvider>
+            <div className="app-shell">
+              <Header view={view} onViewChange={setView} />
+              <div className="app-body">
+                {view === 'brain' && (
+                  <>
+                    <LeftPanel />
+                    <CenterPanel />
+                    <RightPanel />
+                  </>
+                )}
+                {view === 'creator' && (
+                  <>
+                    <CreatorProjectsSidebar />
+                    <CreatorCanvas />
+                    <CreatorActionPanel />
+                  </>
+                )}
+                {view === 'dev' && (
+                  <>
+                    <DevProjectsSidebar />
+                    <DevCanvas />
+                    <DevActionPanel />
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-          <ToastHost />
+            <ToastHost />
+          </DevProvider>
         </CreatorProvider>
       </BackendProvider>
     </ToastProvider>

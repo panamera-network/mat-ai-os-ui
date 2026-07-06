@@ -4,6 +4,7 @@ import MemorySystem from './MemorySystem'
 import ChatPanel from './ChatPanel'
 import SuggestionsPanel from './SuggestionsPanel'
 import QueuePanel from './QueuePanel'
+import GoalsPanel from './GoalsPanel'
 import './RightPanel.css'
 
 const TELEGRAM_LABEL: Record<string, string> = {
@@ -16,6 +17,7 @@ export default function RightPanel() {
   const { health, suggestions, queueTasks } = useBackend()
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [queueOpen, setQueueOpen] = useState(false)
+  const [goalsOpen, setGoalsOpen] = useState(false)
   const telegramStatus = health?.telegram_status ?? 'disabled'
   const activeQueueCount = queueTasks.filter((t) => t.status === 'pending' || t.status === 'running').length
   const hasRunningTask = queueTasks.some((t) => t.status === 'running')
@@ -24,6 +26,16 @@ export default function RightPanel() {
     <aside className="right-panel">
       <div className="right-panel-header">
         {health?.active_model && <div className="model-pill">{health.active_model.model}</div>}
+
+        <button
+          type="button"
+          className="header-icon-btn"
+          onClick={() => setGoalsOpen((open) => !open)}
+          aria-label="Goals"
+          title="Goals"
+        >
+          <span className="goals-icon">🎯</span>
+        </button>
 
         <button
           type="button"
@@ -61,6 +73,7 @@ export default function RightPanel() {
 
       {suggestionsOpen && <SuggestionsPanel onClose={() => setSuggestionsOpen(false)} />}
       {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+      {goalsOpen && <GoalsPanel onClose={() => setGoalsOpen(false)} />}
     </aside>
   )
 }

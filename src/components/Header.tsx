@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
-import ProfilePanel from './ProfilePanel'
-import GoalsPanel from './GoalsPanel'
-import ExportImportMenu from './ExportImportMenu'
-import ModeSelector from './ModeSelector'
+import SettingsPanel from './SettingsPanel'
 import NotificationCenter from './NotificationCenter'
 import type { WorkspaceView } from '../App'
 import './Header.css'
@@ -15,11 +12,12 @@ interface HeaderProps {
 
 export default function Header({ view, onViewChange }: HeaderProps) {
   const [time, setTime] = useState(new Date())
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [goalsOpen, setGoalsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const { online, unreadNotificationCount } = useBackend()
   const status = online ? 'online' : 'offline'
+  const inCreator = view === 'creator'
+  const inDev = view === 'dev'
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
@@ -28,36 +26,30 @@ export default function Header({ view, onViewChange }: HeaderProps) {
 
   return (
     <header className="app-header">
-      <div className="app-header-title">
-        <span className="app-header-brand">MAT.AI</span>
-        <span className="app-header-badge">OS</span>
-      </div>
-      <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
-      <div className="app-header-right">
-        <div className="workspace-toggle">
-          <button
-            type="button"
-            className={`workspace-toggle-btn ${view === 'brain' ? 'active' : ''}`}
-            onClick={() => onViewChange('brain')}
-          >
-            🧠 Brain
-          </button>
-          <button
-            type="button"
-            className={`workspace-toggle-btn ${view === 'creator' ? 'active' : ''}`}
-            onClick={() => onViewChange('creator')}
-          >
-            🎬 Creator
-          </button>
+      <div className="app-header-center">
+        <div className="app-header-title">
+          <span className="app-header-brand">MAT.AI</span>
+          <span className="app-header-badge">OS</span>
         </div>
-        <ModeSelector />
-        <button type="button" className="profile-btn" onClick={() => setGoalsOpen(true)}>
-          Goals
+        <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
+      </div>
+      <div className="app-header-right">
+        <button
+          type="button"
+          className={`creator-toggle-btn ${inCreator ? 'active' : ''}`}
+          onClick={() => onViewChange(inCreator ? 'brain' : 'creator')}
+          title={inCreator ? 'Back to Brain' : 'Open Creator workspace'}
+        >
+          {inCreator ? '🏠 Home' : '🎬 Creator'}
         </button>
-        <button type="button" className="profile-btn" onClick={() => setProfileOpen(true)}>
-          Profile
+        <button
+          type="button"
+          className={`creator-toggle-btn ${inDev ? 'active' : ''}`}
+          onClick={() => onViewChange(inDev ? 'brain' : 'dev')}
+          title={inDev ? 'Back to Brain' : 'Open Dev workspace'}
+        >
+          {inDev ? '🏠 Home' : '🛠️ Dev'}
         </button>
-        <ExportImportMenu />
         <button
           type="button"
           className="header-bell-btn"
@@ -68,6 +60,15 @@ export default function Header({ view, onViewChange }: HeaderProps) {
           🔔
           {unreadNotificationCount > 0 && <span className="header-icon-badge">{unreadNotificationCount}</span>}
         </button>
+        <button
+          type="button"
+          className="header-bell-btn"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          title="Settings"
+        >
+          ⚙️
+        </button>
         <div className={`status-pill ${status}`}>
           <span className="status-dot" />
           {status === 'online' ? 'Online' : 'Offline'}
@@ -76,8 +77,7 @@ export default function Header({ view, onViewChange }: HeaderProps) {
           {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
       </div>
-      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
-      {goalsOpen && <GoalsPanel onClose={() => setGoalsOpen(false)} />}
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       {notifOpen && <NotificationCenter onClose={() => setNotifOpen(false)} />}
     </header>
   )

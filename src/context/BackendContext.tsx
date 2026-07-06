@@ -89,13 +89,6 @@ export interface IdentityProfile {
   active_mode: 'work' | 'trading' | 'learning' | string
 }
 
-// Mirrors main.py's MODE_DOMAINS — which domains BrainView highlights for the active mode.
-export const MODE_DOMAINS: Record<string, string[]> = {
-  work: ['coding', 'business'],
-  trading: ['trading'],
-  learning: ['research', 'ai_automation'],
-}
-
 export type NotificationType =
   | 'task_queued'
   | 'task_completed'
@@ -188,7 +181,6 @@ interface BackendState {
   suggestions: Suggestion[]
   queueTasks: QueueTask[]
   activeDomains: Set<string>
-  modeDomains: Set<string>
   notifications: AppNotification[]
   unreadNotificationCount: number
   dismissNotification: (id: string) => void
@@ -229,7 +221,6 @@ const BackendContext = createContext<BackendState>({
   suggestions: [],
   queueTasks: [],
   activeDomains: new Set(),
-  modeDomains: new Set(),
   notifications: [],
   unreadNotificationCount: 0,
   dismissNotification: () => {},
@@ -281,7 +272,6 @@ export function BackendProvider({ children }: { children: ReactNode }) {
   const knownSuggestionIds = useRef<Set<string>>(new Set())
   const seededSuggestions = useRef(false)
 
-  const modeDomains = identity ? new Set(MODE_DOMAINS[identity.active_mode] ?? []) : new Set<string>()
   const unreadNotificationCount = notifications.filter((n) => !n.read).length
 
   const pushNotification = useCallback(
@@ -577,7 +567,6 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         suggestions,
         queueTasks,
         activeDomains,
-        modeDomains,
         notifications,
         unreadNotificationCount,
         dismissNotification,
