@@ -100,6 +100,7 @@ export type NotificationType =
   | 'suggestion'
   | 'alert'
   | 'system_notification'
+  | 'error_logged'
 
 export interface AppNotification {
   id: string
@@ -134,6 +135,15 @@ export interface QueueTask {
   completed_at: string | null
 }
 
+interface LoggedError {
+  id: string
+  logger_name: string
+  message: string
+  traceback: string | null
+  created_at: string
+  resolved: boolean
+}
+
 interface OrchestratorEvent {
   type:
     | 'agent_active'
@@ -145,13 +155,14 @@ interface OrchestratorEvent {
     | 'loop_triggered'
     | 'loop_completed'
     | 'system_notification'
+    | 'error_logged'
   agent_id?: string
   domain?: string
   task?: string
   result?: string
   task_id?: string
   name?: string
-  error?: string
+  error?: string | LoggedError
   success?: boolean
   // system_notification payload (a captured Windows toast — see core/notification_reader.py)
   app?: string
@@ -250,6 +261,7 @@ const TOAST_WORTHY: ReadonlySet<NotificationType> = new Set([
   'suggestion',
   'alert',
   'system_notification',
+  'error_logged',
 ])
 
 export function BackendProvider({ children }: { children: ReactNode }) {
@@ -285,7 +297,7 @@ export function BackendProvider({ children }: { children: ReactNode }) {
         setNotifications((prev) => prev.filter((n) => n.id !== id || n.pinned))
       }, 5000)
       if (TOAST_WORTHY.has(type)) {
-        showToast(message, type === 'task_failed' || type === 'alert' ? 'error' : 'info')
+        showToast(message, type === 'task_failed' || type === 'alert' || type === 'error_logged' ? 'error' : 'info')
       }
     },
     [showToast],
@@ -544,6 +556,8 @@ export function BackendProvider({ children }: { children: ReactNode }) {
       } else if (event.type === 'system_notification') {
         const label = [event.app, event.title, event.message].filter(Boolean).join(' — ')
         pushNotification('system_notification', label || 'System notification')
+      } else if (event.type === 'error_logged' && event.error && typeof event.error === 'object') {
+        pushNotification('error_logged', `${event.error.logger_name}: ${event.error.message}`)
       }
     },
     [fetchAgents, fetchHealth, pushNotification],

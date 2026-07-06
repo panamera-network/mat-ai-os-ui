@@ -70,6 +70,84 @@
   width: 100%;
 }
 
+/* --- Bugs (from the persistent error log) --- */
+.dev-bugs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.dev-bug-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-bug-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.dev-bug-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dev-bug-logger {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-red);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dev-bug-message {
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.dev-bug-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dev-bug-investigate-btn,
+.dev-bug-dismiss-btn {
+  flex: 1;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.dev-bug-investigate-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dev-bug-dismiss-btn {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.dev-bug-investigate-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* --- Canvas (center) --- */
 .dev-canvas {
   padding: 14px;

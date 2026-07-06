@@ -38,9 +38,31 @@ export interface DevProject {
   updated_at: string
 }
 
+export interface LoggedError {
+  id: string
+  logger_name: string
+  message: string
+  traceback: string | null
+  created_at: string
+  resolved: boolean
+}
+
 interface DevEvent {
-  type: 'dev_project_updated' | string
+  type: 'dev_project_updated' | 'error_logged' | string
   project?: DevProject
+  error?: LoggedError
+}
+
+function buildInvestigateGoal(err: LoggedError): string {
+  return [
+    'Investigate this error and suggest a fix.',
+    '',
+    `Logger: ${err.logger_name}`,
+    `Message: ${err.message}`,
+    '',
+    'Traceback:',
+    err.traceback || '(no traceback captured)',
+  ].join('\n')
 }
 
 // Fallback poll for the open project — covers the WebSocket connection dropping or not
@@ -54,10 +76,15 @@ interface DevState {
   loadingProjects: boolean
   error: string | null
   running: boolean
+  errors: LoggedError[]
+  investigatingErrorId: string | null
   selectProject: (id: string | null) => void
   refreshProjects: () => Promise<void>
   createProject: (title: string, goal: string) => Promise<DevProject | null>
-  runProject: (goal: string) => Promise<void>
+  runProject: (goal: string, projectId?: string) => Promise<void>
+  refreshErrors: () => Promise<void>
+  investigateError: (err: LoggedError) => Promise<void>
+  resolveError: (id: string) => Promise<void>
 }
 
 const DevContext = createContext<DevState>({
@@ -67,10 +94,15 @@ const DevContext = createContext<DevState>({
   loadingProjects: false,
   error: null,
   running: false,
+  errors: [],
+  investigatingErrorId: null,
   selectProject: () => {},
   refreshProjects: async () => {},
   createProject: async () => null,
   runProject: async () => {},
+  refreshErrors: async () => {},
+  investigateError: async () => {},
+  resolveError: async () => {},
 })
 
 function upsertProject(projects: DevProject[], updated: DevProject): DevProject[] {
@@ -88,6 +120,8 @@ export function DevProvider({ children }: { children: ReactNode }) {
   const [loadingProjects, setLoadingProjects] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
+  const [errors, setErrors] = useState<LoggedError[]>([])
+  const [investigatingErrorId, setInvestigatingErrorId] = useState<string | null>(null)
   const selectedProjectIdRef = useRef<string | null>(null)
   selectedProjectIdRef.current = selectedProjectId
 
@@ -151,8 +185,8 @@ export function DevProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const runProject = useCallback(async (goal: string) => {
-    const id = selectedProjectIdRef.current
+  const runProject = useCallback(async (goal: string, projectId?: string) => {
+    const id = projectId ?? selectedProjectIdRef.current
     if (!id) return
     setRunning(true)
     setError(null)
@@ -176,21 +210,65 @@ export function DevProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const handleSocketMessage = useCallback((data: unknown) => {
-    if (typeof data !== 'object' || data === null) return
-    const event = data as DevEvent
-    if (event.type !== 'dev_project_updated') return
-    const project = event.project
-    if (!project) return
-    setProjects((prev) => upsertProject(prev, project))
-    if (selectedProjectIdRef.current === project.project_id) setSelectedProject(project)
+  const refreshErrors = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/errors?include_resolved=false`, { signal: AbortSignal.timeout(5000) })
+      if (res.ok) {
+        const data: { errors: LoggedError[] } = await res.json()
+        setErrors(data.errors)
+      }
+    } catch {
+      // next poll or error_logged event will reconcile
+    }
   }, [])
+
+  // Step 0's whole point: notice a bug without babysitting the console, then let the
+  // human manually send it to the coding agent - this is that "manually" step made one
+  // click instead of copy-pasting a traceback into a new project by hand. No automatic
+  // fix proposal here; the agent just investigates and replies (or asks for an MCP
+  // approval), exactly like any other Dev Workspace run.
+  const investigateError = useCallback(
+    async (err: LoggedError) => {
+      setInvestigatingErrorId(err.id)
+      try {
+        const project = await createProject(`Bug: ${err.logger_name}`, buildInvestigateGoal(err))
+        if (project) await runProject(buildInvestigateGoal(err), project.project_id)
+      } finally {
+        setInvestigatingErrorId(null)
+      }
+    },
+    [createProject, runProject],
+  )
+
+  const resolveError = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/errors/${id}/resolve`, { method: 'POST' })
+      if (res.ok) setErrors((prev) => prev.filter((e) => e.id !== id))
+    } catch {
+      // best-effort; the error stays listed and can be retried
+    }
+  }, [])
+
+  const handleSocketMessage = useCallback(
+    (data: unknown) => {
+      if (typeof data !== 'object' || data === null) return
+      const event = data as DevEvent
+      if (event.type === 'dev_project_updated' && event.project) {
+        setProjects((prev) => upsertProject(prev, event.project!))
+        if (selectedProjectIdRef.current === event.project.project_id) setSelectedProject(event.project)
+      } else if (event.type === 'error_logged') {
+        void refreshErrors()
+      }
+    },
+    [refreshErrors],
+  )
 
   useSocket(handleSocketMessage)
 
   useEffect(() => {
     refreshProjects()
-  }, [refreshProjects])
+    refreshErrors()
+  }, [refreshProjects, refreshErrors])
 
   // Fallback poll for the open project only — keeps working even if the WebSocket
   // connection above is down or reconnecting.
@@ -199,6 +277,12 @@ export function DevProvider({ children }: { children: ReactNode }) {
     const id = setInterval(() => fetchProject(selectedProjectId), SELECTED_PROJECT_POLL_MS)
     return () => clearInterval(id)
   }, [selectedProjectId, fetchProject])
+
+  // Same fallback rationale as above, for the unresolved-errors list.
+  useEffect(() => {
+    const id = setInterval(refreshErrors, SELECTED_PROJECT_POLL_MS)
+    return () => clearInterval(id)
+  }, [refreshErrors])
 
   return (
     <DevContext.Provider
@@ -209,10 +293,15 @@ export function DevProvider({ children }: { children: ReactNode }) {
         loadingProjects,
         error,
         running,
+        errors,
+        investigatingErrorId,
         selectProject,
         refreshProjects,
         createProject,
         runProject,
+        refreshErrors,
+        investigateError,
+        resolveError,
       }}
     >
       {children}

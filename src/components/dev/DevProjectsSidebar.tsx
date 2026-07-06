@@ -9,7 +9,18 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function DevProjectsSidebar() {
-  const { projects, selectedProjectId, selectProject, createProject, loadingProjects, error } = useDev()
+  const {
+    projects,
+    selectedProjectId,
+    selectProject,
+    createProject,
+    loadingProjects,
+    error,
+    errors,
+    investigatingErrorId,
+    investigateError,
+    resolveError,
+  } = useDev()
   const [formOpen, setFormOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [goal, setGoal] = useState('')
@@ -29,6 +40,35 @@ export default function DevProjectsSidebar() {
 
   return (
     <aside className="left-panel dev-sidebar">
+      {errors.length > 0 && (
+        <div className="panel-card dev-bugs-card">
+          <h3>Bugs</h3>
+          <div className="dev-bug-list">
+            {errors.map((err) => (
+              <div className="dev-bug-row" key={err.id}>
+                <div className="dev-bug-text">
+                  <span className="dev-bug-logger">{err.logger_name}</span>
+                  <span className="dev-bug-message">{err.message}</span>
+                </div>
+                <div className="dev-bug-actions">
+                  <button
+                    type="button"
+                    className="dev-bug-investigate-btn"
+                    onClick={() => investigateError(err)}
+                    disabled={investigatingErrorId === err.id}
+                  >
+                    {investigatingErrorId === err.id ? '…' : 'Investigate'}
+                  </button>
+                  <button type="button" className="dev-bug-dismiss-btn" onClick={() => resolveError(err.id)}>
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="panel-card">
         <h3>Dev Projects</h3>
 
