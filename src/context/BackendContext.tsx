@@ -18,6 +18,10 @@ export interface SkillSummary {
   description: string
   source?: string
   auto_generated?: boolean
+  // Computed server-side (skills/registry.py's skill_kind) — "ability" if this skill
+  // actually gates something (a real tool/MCP check), "content" if it's prompt-fragment
+  // flavor text only. Optional since older cached responses may predate this field.
+  kind?: 'ability' | 'content'
 }
 
 export interface LoopInfo {

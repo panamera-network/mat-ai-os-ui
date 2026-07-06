@@ -376,12 +376,19 @@ function SkillsExpand() {
   return (
     <div className="layer-expand-body">
       <div className="domain-count-list">
-        {domainIds.map((domainId) => (
-          <div className="kv-row" key={domainId}>
-            <span>{domainId}</span>
-            <span className="value-muted">{skillsByDomain[domainId]?.length ?? 0}</span>
-          </div>
-        ))}
+        {domainIds.map((domainId) => {
+          const skills = skillsByDomain[domainId] ?? []
+          const abilityCount = skills.filter((s) => s.kind === 'ability').length
+          return (
+            <div className="kv-row" key={domainId}>
+              <span>{domainId}</span>
+              <span className="value-muted">
+                {skills.length}
+                {abilityCount > 0 && ` (${abilityCount} ability)`}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       {!formOpen && (
