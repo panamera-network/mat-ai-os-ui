@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../config'
 import { useSocket } from '../hooks/useSocket'
 
 export type DevProjectStatus = 'draft' | 'in_progress' | 'ready'
+export type DevProjectKind = 'manual' | 'bug_investigation'
 export type DevCardKind = 'response' | 'command'
 export type McpApprovalStatus = 'pending' | 'executed' | 'failed' | 'denied'
 
@@ -33,6 +34,7 @@ export interface DevProject {
   title: string
   status: DevProjectStatus
   goal: string
+  kind: DevProjectKind
   cards: DevCard[]
   created_at: string
   updated_at: string
@@ -62,6 +64,18 @@ function buildInvestigateGoal(err: LoggedError): string {
     '',
     'Traceback:',
     err.traceback || '(no traceback captured)',
+    '',
+    'A sandboxed local copy of this mat-ai-os repo has already been prepared at ' +
+      '/workspace/mat-ai-os inside your execute_terminal_command sandbox (you do not need ' +
+      'to clone it yourself). It is disposable and network-isolated — nothing you do there ' +
+      'touches the real running system.',
+    '',
+    'If you find a concrete fix, prefer ONE combined execute_terminal_command over a bare ' +
+      'text suggestion: apply the change, then `git diff` (so it is reviewable), then run the ' +
+      'relevant test(s), e.g.:',
+    "cd /workspace/mat-ai-os && sed -i '...' core/foo.py && git diff && pytest -q tests/core/test_foo.py",
+    'That single command will need my approval before it runs — I will see the diff and test ' +
+      'result together once I approve it.',
   ].join('\n')
 }
 
@@ -80,7 +94,7 @@ interface DevState {
   investigatingErrorId: string | null
   selectProject: (id: string | null) => void
   refreshProjects: () => Promise<void>
-  createProject: (title: string, goal: string) => Promise<DevProject | null>
+  createProject: (title: string, goal: string, kind?: DevProjectKind) => Promise<DevProject | null>
   runProject: (goal: string, projectId?: string) => Promise<void>
   refreshErrors: () => Promise<void>
   investigateError: (err: LoggedError) => Promise<void>
@@ -162,12 +176,12 @@ export function DevProvider({ children }: { children: ReactNode }) {
     [projects, fetchProject],
   )
 
-  const createProject = useCallback(async (title: string, goal: string) => {
+  const createProject = useCallback(async (title: string, goal: string, kind: DevProjectKind = 'manual') => {
     try {
       const res = await fetch(`${API_BASE_URL}/dev/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, goal }),
+        body: JSON.stringify({ title, goal, kind }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -231,7 +245,7 @@ export function DevProvider({ children }: { children: ReactNode }) {
     async (err: LoggedError) => {
       setInvestigatingErrorId(err.id)
       try {
-        const project = await createProject(`Bug: ${err.logger_name}`, buildInvestigateGoal(err))
+        const project = await createProject(`Bug: ${err.logger_name}`, buildInvestigateGoal(err), 'bug_investigation')
         if (project) await runProject(buildInvestigateGoal(err), project.project_id)
       } finally {
         setInvestigatingErrorId(null)
