@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config'
 import { useMcpApprovals } from '../hooks/useMcpApprovals'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'mcp'
+type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'mcp' | 'integrations'
 
 interface CoreLayer {
   id: LayerId
@@ -977,6 +977,52 @@ function McpExpand() {
   )
 }
 
+interface Integration {
+  id: string
+  name: string
+  configured: boolean
+}
+
+function IntegrationsExpand() {
+  const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/integrations`)
+        if (!res.ok || cancelled) return
+        const data: { integrations: Integration[] } = await res.json()
+        if (!cancelled) setIntegrations(data.integrations)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return (
+    <div className="layer-expand-body">
+      <div className="model-section-title">External Integrations</div>
+      {loading && <div className="empty-hint">Loading integrations…</div>}
+      {!loading && integrations.length === 0 && <div className="empty-hint">No integration status available</div>}
+      {integrations.map((i) => (
+        <div className="mcp-server-card" key={i.id}>
+          <div className="mcp-server-top">
+            <span className="mcp-server-name">{i.name}</span>
+            <span className={`core-layer-badge ${i.configured ? 'live' : 'soon'}`}>
+              {i.configured ? 'configured' : 'not set up'}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function LLMExpand() {
   const { models, refreshModels, refreshHealth } = useBackend()
   const [selecting, setSelecting] = useState<string | null>(null)
@@ -1099,6 +1145,7 @@ const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   llm: 'LLM',
   governance: 'Governance',
   mcp: 'MCP',
+  integrations: 'Integrations',
 }
 
 // Polling interval for the pending-approval count badge on the Core Engine's MCP
@@ -1170,6 +1217,13 @@ export default function LeftPanel() {
       color: 'rgba(239, 68, 68, 0.15)',
       badge: pendingApprovals.length > 0 ? 'live' : undefined,
     },
+    {
+      id: 'integrations',
+      label: 'Integrations',
+      status: 'Web, Calendar, Email, WhatsApp, Obsidian, MT5, Engine',
+      icon: '🧩',
+      color: 'rgba(16, 185, 129, 0.15)',
+    },
   ]
 
   const toggleLayer = (id: LayerId, el: HTMLElement) => {
@@ -1228,6 +1282,7 @@ export default function LeftPanel() {
                 {overlayLayer === 'llm' && <LLMExpand />}
                 {overlayLayer === 'governance' && <GovernanceExpand />}
                 {overlayLayer === 'mcp' && <McpExpand />}
+                {overlayLayer === 'integrations' && <IntegrationsExpand />}
               </div>
             </div>
           </>
