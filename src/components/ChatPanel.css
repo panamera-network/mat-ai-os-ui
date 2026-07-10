@@ -228,6 +228,17 @@
   border: 1px solid color-mix(in srgb, var(--accent-red) 35%, transparent);
 }
 
+/* Model-transparency label ("_ollama cloud_" etc.) split off a fallback reply's raw
+   text by splitModelLabel() in ChatPanel.tsx - shown on its own line, small/italic/
+   muted so it reads as an aside, not part of the actual answer. */
+.chat-model-label {
+  margin-top: 4px;
+  font-size: 10px;
+  font-style: italic;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
 .chat-message.briefing {
   align-self: center;
   max-width: 90%;

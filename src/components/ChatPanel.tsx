@@ -87,6 +87,17 @@ function executionBadge(ep: ExecutionPath): { icon: string; label: string; title
   return { icon: '✓', label: 'verified', title, cls: 'exec-badge-ok' }
 }
 
+// A fallback reply ends with "\n\n_<provider label>_" (see agents/base_agent.py's
+// run() + core/llm_provider.py's normalize_provider_label) - split it off so it can be
+// rendered smaller/italic/muted instead of as part of the main answer text.
+const MODEL_LABEL_PATTERN = /\n\n_([^_\n]+)_$/
+
+function splitModelLabel(text: string): { body: string; label: string | null } {
+  const match = text.match(MODEL_LABEL_PATTERN)
+  if (!match) return { body: text, label: null }
+  return { body: text.slice(0, match.index), label: match[1] }
+}
+
 const ACCEPTED_ATTACHMENT_EXTENSIONS = ['.pdf', '.txt', '.md', '.csv', '.png', '.jpg', '.jpeg']
 
 function formatFileSize(bytes: number): string {
@@ -637,10 +648,13 @@ export default function ChatPanel() {
             )
           }
 
+          const { body, label } = m.role === 'orchestrator' ? splitModelLabel(m.text) : { body: m.text, label: null }
+
           return (
             <div key={m.id} className={`chat-message ${m.role}`}>
               {m.attachmentName && <div className="chat-attachment-chip">📎 {m.attachmentName}</div>}
-              {m.text}
+              {body}
+              {label && <div className="chat-model-label">{label}</div>}
               {m.role === 'orchestrator' && (
                 <>
                   {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
