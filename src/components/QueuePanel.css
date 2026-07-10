@@ -180,3 +180,10 @@
   font-size: 10px;
   color: var(--accent-red);
 }
+
+/* Phase 14.1 — why a guardrail stage (not concurrency overflow) deferred this task */
+.queue-task-reason {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--accent-amber);
+}

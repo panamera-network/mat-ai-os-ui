@@ -202,6 +202,32 @@
   vertical-align: middle;
 }
 
+/* Phase 14.1 execution-path badge — only rendered when Verifier/Gate actually resolved
+   (pass or fail), see executionBadge() in ChatPanel.tsx. Hover for the full breakdown. */
+.chat-exec-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-style: normal;
+  border-radius: 8px;
+  padding: 1px 6px;
+  vertical-align: middle;
+  cursor: default;
+}
+
+.chat-exec-badge.exec-badge-ok {
+  color: var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-green) 35%, transparent);
+}
+
+.chat-exec-badge.exec-badge-flagged {
+  color: var(--accent-red);
+  background: color-mix(in srgb, var(--accent-red) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-red) 35%, transparent);
+}
+
 .chat-message.briefing {
   align-self: center;
   max-width: 90%;

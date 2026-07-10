@@ -37,6 +37,17 @@ interface CollaborationData {
   final_result: string
 }
 
+// Phase 14.1's execution-path metadata (see Orchestrator.handle_task's docstring) —
+// only the fields the badge below actually reads; the backend sends more (law_result,
+// contract_result, rule_result, selected_service/capability) but they're not surfaced
+// in chat, just in the tooltip breakdown text.
+interface ExecutionPath {
+  resolved_by?: string | null
+  verifier_result?: { verdict: 'pass' | 'fail' | 'queue'; reason: string } | null
+  gate_result?: { gate_result: 'pass' | 'fail'; checks: { name: string; status: string }[] } | null
+  governance_action?: string | null
+}
+
 interface ChatMessage {
   id: number
   role: 'user' | 'orchestrator' | 'governance' | 'briefing'
@@ -48,6 +59,32 @@ interface ChatMessage {
   feedbackTaskId?: string
   feedbackRating?: number
   attachmentName?: string
+  executionPath?: ExecutionPath
+}
+
+// A message only gets a badge when the quality pipeline actually resolved (pass/fail on
+// both Verifier and Gate) — a "queue" verdict is Verifier's own "genuinely ambiguous, ask
+// a human" signal (see core/verifier.py), not a problem, so it deliberately stays quiet
+// rather than flagging most ordinary replies.
+function executionBadge(ep: ExecutionPath): { icon: string; label: string; title: string; cls: string } | null {
+  const verifierFail = ep.verifier_result?.verdict === 'fail'
+  const gateFail = ep.gate_result?.gate_result === 'fail'
+  const verifierPass = ep.verifier_result?.verdict === 'pass'
+  if (!verifierFail && !gateFail && !verifierPass) return null
+
+  const title = [
+    ep.resolved_by ? `routed via ${ep.resolved_by}` : null,
+    ep.verifier_result ? `verifier: ${ep.verifier_result.verdict} — ${ep.verifier_result.reason}` : null,
+    ep.gate_result ? `gate: ${ep.gate_result.gate_result}` : null,
+    ep.governance_action && ep.governance_action !== 'none' ? `governance: ${ep.governance_action}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  if (verifierFail || gateFail) {
+    return { icon: '⚠', label: 'flagged', title, cls: 'exec-badge-flagged' }
+  }
+  return { icon: '✓', label: 'verified', title, cls: 'exec-badge-ok' }
 }
 
 const ACCEPTED_ATTACHMENT_EXTENSIONS = ['.pdf', '.txt', '.md', '.csv', '.png', '.jpg', '.jpeg']
@@ -240,14 +277,22 @@ export default function ChatPanel() {
         task_id?: string | null
         collaboration?: CollaborationData | null
         feedback_task_id?: string | null
+        execution_path?: ExecutionPath | null
+        stage?: string | null
+        action?: string | null
+        detail?: string | null
       } = await res.json()
       if (data.queued && data.task_id) {
+        // Phase 14.1: a guardrail stage (Law/Contract/Rule) can defer a task, not just
+        // concurrency overflow — `detail` carries the real reason when that happened.
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now() + 1,
             role: 'orchestrator',
-            text: 'The Orchestrator is busy with another task, so this one was queued — the result will appear here once it runs.',
+            text: data.detail
+              ? `BOSS, this task was queued (${data.stage}: ${data.action}) — ${data.detail}. It'll run once dispatched.`
+              : 'The Orchestrator is busy with another task, so this one was queued — the result will appear here once it runs.',
           },
         ])
         pollQueuedTask(data.task_id, startedAt, autoSpeak)
@@ -262,6 +307,7 @@ export default function ChatPanel() {
           collaboration: data.collaboration ?? undefined,
           durationMs: Date.now() - startedAt,
           feedbackTaskId: data.feedback_task_id ?? undefined,
+          executionPath: data.execution_path ?? undefined,
         },
       ])
       if (autoSpeak && data.result) await playTtsResponse(data.result)
@@ -598,6 +644,15 @@ export default function ChatPanel() {
               {m.role === 'orchestrator' && (
                 <>
                   {m.durationMs !== undefined && <span className="chat-duration-badge">{formatDuration(m.durationMs)}</span>}
+                  {m.executionPath &&
+                    (() => {
+                      const badge = executionBadge(m.executionPath!)
+                      return badge ? (
+                        <span className={`chat-exec-badge ${badge.cls}`} title={badge.title}>
+                          {badge.icon} {badge.label}
+                        </span>
+                      ) : null
+                    })()}
                   <button className="chat-copy-btn" onClick={() => copyMessage(m)} type="button">
                     {copiedId === m.id ? 'Copied!' : '📋'}
                   </button>

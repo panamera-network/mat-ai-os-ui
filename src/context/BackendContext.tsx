@@ -137,6 +137,11 @@ export interface QueueTask {
   created_at: string
   started_at: string | null
   completed_at: string | null
+  // Phase 14.1 — set only when a guardrail stage (Law/Contract/Rule), not plain
+  // concurrency overflow, deferred this task. See Orchestrator._queue_task_safely.
+  stage?: string | null
+  action?: string | null
+  detail?: string | null
 }
 
 interface LoggedError {

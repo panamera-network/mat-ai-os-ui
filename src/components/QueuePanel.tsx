@@ -43,6 +43,11 @@ export default function QueuePanel({ onClose }: QueuePanelProps) {
                 <span>Priority: {t.priority}</span>
                 <span>Agent: —</span>
               </div>
+              {t.stage && (
+                <div className="queue-task-reason">
+                  ⚖ Queued by {t.stage} ({t.action}) — {t.detail}
+                </div>
+              )}
               {t.error && <div className="queue-task-error">{t.error}</div>}
             </div>
           ))}

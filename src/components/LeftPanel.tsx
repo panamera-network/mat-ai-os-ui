@@ -3,9 +3,10 @@ import { useBackend } from '../context/BackendContext'
 import { DOMAINS } from '../data/domains'
 import { API_BASE_URL } from '../config'
 import { useMcpApprovals } from '../hooks/useMcpApprovals'
+import { useGovernanceLifecycle, type GovernanceCase } from '../hooks/useGovernanceLifecycle'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'mcp' | 'integrations'
+type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'lifecycle' | 'mcp' | 'integrations'
 
 interface CoreLayer {
   id: LayerId
@@ -1137,6 +1138,76 @@ function GovernanceExpand() {
   )
 }
 
+// Separate from GovernanceExpand above on purpose — that panel is core/governance.py's
+// /learn security/quality/relevance gate. This one is the Universal Governance Lifecycle
+// (Phase 14): Problem -> Quarantine -> Fix Loop -> Re-Verify -> Active or Suggestion ->
+// User Approval, for any entity type (rules/skills/knowledge/tasks/...), not just /learn.
+function GovernanceLifecycleExpand() {
+  const { suggestions, summary, loading, error, actingId, refresh, resolve } = useGovernanceLifecycle()
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  const riskClass = (risk: string) => (risk === 'high' ? 'risk-high' : risk === 'medium' ? 'risk-medium' : 'risk-low')
+
+  return (
+    <div className="layer-expand-body">
+      <div className="kv-row">
+        <span>Open cases</span>
+        <span className="value-muted">{summary.total_cases}</span>
+      </div>
+      {Object.entries(summary.by_state).map(([state, count]) => (
+        <div className="kv-row" key={state}>
+          <span>{state.replace(/_/g, ' ')}</span>
+          <span className="value-muted">{count}</span>
+        </div>
+      ))}
+      {error && <div className="form-error">{error}</div>}
+      {!loading && suggestions.length === 0 && <div className="empty-hint">No suggestions pending.</div>}
+      {suggestions.map((c: GovernanceCase) => (
+        <div className="mcp-server-card" key={c.case_id}>
+          <div className="mcp-server-top">
+            <span className="mcp-server-name">
+              {c.entity_type}/{c.entity_id.slice(0, 12)}
+            </span>
+            <span className={`gov-risk-badge ${riskClass(c.suggestion?.risk_level ?? 'low')}`}>
+              {c.suggestion?.risk_level ?? 'low'} risk
+            </span>
+          </div>
+          <div className="value-muted" style={{ marginTop: 4 }}>
+            {c.suggestion?.summary ?? c.issue}
+          </div>
+          {c.state === 'awaiting_approval' ? (
+            <div className="gov-lifecycle-actions">
+              <button
+                type="button"
+                className="chat-feedback-btn active up"
+                disabled={actingId === c.case_id}
+                onClick={() => resolve(c.case_id, true)}
+              >
+                ✓ Approve
+              </button>
+              <button
+                type="button"
+                className="chat-feedback-btn active down"
+                disabled={actingId === c.case_id}
+                onClick={() => resolve(c.case_id, false)}
+              >
+                ✕ Reject
+              </button>
+            </div>
+          ) : (
+            <div className="value-muted" style={{ marginTop: 4, fontSize: 11 }}>
+              {c.state.replace(/_/g, ' ')} — no approval needed
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   memory: 'Memory',
   skills: 'Skills',
@@ -1144,6 +1215,7 @@ const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   loops: 'Loops',
   llm: 'LLM',
   governance: 'Governance',
+  lifecycle: 'Quality',
   mcp: 'MCP',
   integrations: 'Integrations',
 }
@@ -1157,6 +1229,7 @@ const MCP_APPROVAL_COUNT_POLL_MS = 5000
 export default function LeftPanel() {
   const { health, online, agents, loops } = useBackend()
   const { pending: pendingApprovals, refresh: refreshApprovals } = useMcpApprovals()
+  const { awaitingApprovalCount, refresh: refreshLifecycle } = useGovernanceLifecycle()
   const [overlayLayer, setOverlayLayer] = useState<LayerId | null>(null)
   const [overlayTop, setOverlayTop] = useState(0)
   const [overlayLeft, setOverlayLeft] = useState(0)
@@ -1168,6 +1241,12 @@ export default function LeftPanel() {
     const id = setInterval(refreshApprovals, MCP_APPROVAL_COUNT_POLL_MS)
     return () => clearInterval(id)
   }, [refreshApprovals])
+
+  useEffect(() => {
+    refreshLifecycle()
+    const id = setInterval(refreshLifecycle, MCP_APPROVAL_COUNT_POLL_MS)
+    return () => clearInterval(id)
+  }, [refreshLifecycle])
 
   const layers: CoreLayer[] = [
     { id: 'memory', label: 'Memory', status: online ? 'Connected' : 'Idle', icon: '🧠', color: 'rgba(139, 92, 246, 0.15)' },
@@ -1208,6 +1287,14 @@ export default function LeftPanel() {
       icon: '🛡️',
       color: 'rgba(139, 92, 246, 0.15)',
       badge: 'live',
+    },
+    {
+      id: 'lifecycle',
+      label: 'Quality',
+      status: awaitingApprovalCount > 0 ? `⚠ ${awaitingApprovalCount} awaiting approval` : 'No open cases',
+      icon: '🩺',
+      color: 'rgba(236, 72, 153, 0.15)',
+      badge: awaitingApprovalCount > 0 ? 'live' : undefined,
     },
     {
       id: 'mcp',
@@ -1281,6 +1368,7 @@ export default function LeftPanel() {
                 {overlayLayer === 'loops' && <LoopsExpand />}
                 {overlayLayer === 'llm' && <LLMExpand />}
                 {overlayLayer === 'governance' && <GovernanceExpand />}
+                {overlayLayer === 'lifecycle' && <GovernanceLifecycleExpand />}
                 {overlayLayer === 'mcp' && <McpExpand />}
                 {overlayLayer === 'integrations' && <IntegrationsExpand />}
               </div>
