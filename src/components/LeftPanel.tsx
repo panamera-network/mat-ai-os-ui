@@ -6,7 +6,20 @@ import { useMcpApprovals } from '../hooks/useMcpApprovals'
 import { useGovernanceLifecycle, type GovernanceCase } from '../hooks/useGovernanceLifecycle'
 import './LeftPanel.css'
 
-type LayerId = 'memory' | 'skills' | 'agents' | 'loops' | 'llm' | 'governance' | 'lifecycle' | 'mcp' | 'integrations'
+type LayerId =
+  | 'memory'
+  | 'skills'
+  | 'agents'
+  | 'loops'
+  | 'llm'
+  | 'governance'
+  | 'lifecycle'
+  | 'guardrails'
+  | 'integrity'
+  | 'overnight'
+  | 'sparring'
+  | 'mcp'
+  | 'integrations'
 
 interface CoreLayer {
   id: LayerId
@@ -1208,6 +1221,335 @@ function GovernanceLifecycleExpand() {
   )
 }
 
+// --- Tier 2 read-only panels: Guardrails / Memory Integrity / Overnight / Sparring ------
+// All four follow IntegrationsExpand's simplest shape (one fetch on mount, no polling,
+// no mutators) — these are inspection surfaces, not action-required ones like MCP/Quality.
+
+interface LawStatus {
+  total: number
+  active_count: number
+  inactive_count: number
+  active_laws: { id: string; action: string; rule: string }[]
+}
+
+interface ContractRules {
+  acts_alone: string[]
+  queues_for_me: string[]
+  wakes_me: string[]
+}
+
+interface TrustRecord {
+  runs: number
+  passes: number
+  fails: number
+  pass_rate: number
+  trust_tier: string
+}
+
+interface BudgetStatus {
+  cloud_usd_spent: number
+  cloud_usd_limit: number
+  local_requests: number
+  local_request_limit: number
+  hard_stop: boolean
+  emergency: boolean
+}
+
+function GuardrailsExpand() {
+  const [law, setLaw] = useState<LawStatus | null>(null)
+  const [contract, setContract] = useState<ContractRules | null>(null)
+  const [trust, setTrust] = useState<Record<string, TrustRecord>>({})
+  const [budget, setBudget] = useState<BudgetStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      fetch(`${API_BASE_URL}/laws/status`),
+      fetch(`${API_BASE_URL}/contract`),
+      fetch(`${API_BASE_URL}/trust/ledger`),
+      fetch(`${API_BASE_URL}/budget/status`),
+    ])
+      .then(async ([lawRes, contractRes, trustRes, budgetRes]) => {
+        if (cancelled) return
+        if (lawRes.ok) setLaw(await lawRes.json())
+        if (contractRes.ok) setContract(await contractRes.json())
+        if (trustRes.ok) setTrust((await trustRes.json()).ledger)
+        if (budgetRes.ok) setBudget(await budgetRes.json())
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="layer-expand-body">
+        <div className="empty-hint">Loading…</div>
+      </div>
+    )
+  }
+
+  const trustEntries = Object.entries(trust)
+
+  return (
+    <div className="layer-expand-body">
+      <div className="kv-row">
+        <span>Active laws</span>
+        <span className="value-muted">{law ? `${law.active_count} / ${law.total}` : '—'}</span>
+      </div>
+      {law?.active_laws.map((l) => (
+        <div className="kv-row" key={l.id}>
+          <span>{l.action}</span>
+          <span className="value-muted">{l.rule}</span>
+        </div>
+      ))}
+
+      <div className="kv-row" style={{ marginTop: 8 }}>
+        <span>Acts alone</span>
+        <span className="value-muted">{contract?.acts_alone.join(', ') || '—'}</span>
+      </div>
+      <div className="kv-row">
+        <span>Queues for me</span>
+        <span className="value-muted">{contract?.queues_for_me.join(', ') || '—'}</span>
+      </div>
+      <div className="kv-row">
+        <span>Wakes me</span>
+        <span className="value-muted">{contract?.wakes_me.join(', ') || '—'}</span>
+      </div>
+
+      <div className="kv-row" style={{ marginTop: 8 }}>
+        <span>Trust ledger</span>
+      </div>
+      {trustEntries.length === 0 && <div className="empty-hint">No capability runs tracked yet.</div>}
+      {trustEntries.map(([cap, rec]) => (
+        <div className="kv-row" key={cap}>
+          <span>{cap}</span>
+          <span className="value-muted">
+            {rec.trust_tier} · {rec.runs} runs · {(rec.pass_rate * 100).toFixed(0)}%
+          </span>
+        </div>
+      ))}
+
+      <div className="kv-row" style={{ marginTop: 8 }}>
+        <span>Budget (cloud)</span>
+        <span className="value-muted">
+          {budget ? `$${budget.cloud_usd_spent.toFixed(2)} / $${budget.cloud_usd_limit}` : '—'}
+        </span>
+      </div>
+      <div className="kv-row">
+        <span>Budget (local)</span>
+        <span className="value-muted">{budget ? `${budget.local_requests} / ${budget.local_request_limit} req` : '—'}</span>
+      </div>
+      {budget?.hard_stop && <div className="form-error">Hard stop in effect — daily budget reached.</div>}
+      {!budget?.hard_stop && budget?.emergency && <div className="form-error">Emergency threshold reached.</div>}
+    </div>
+  )
+}
+
+interface IntegritySummary {
+  status: string
+  level?: string
+  checked_at?: string
+  corrupted_count?: number
+  message?: string
+}
+
+interface IntegrityHistoryEntry {
+  report_id: string
+  level: string
+  status: string
+  checked_at: string
+}
+
+function integrityRiskClass(status?: string): string {
+  return status === 'critical' ? 'risk-high' : status === 'warning' ? 'risk-medium' : 'risk-low'
+}
+
+function MemoryIntegrityExpand() {
+  const [latest, setLatest] = useState<IntegritySummary | null>(null)
+  const [history, setHistory] = useState<IntegrityHistoryEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([fetch(`${API_BASE_URL}/memory/integrity`), fetch(`${API_BASE_URL}/memory/integrity/history`)])
+      .then(async ([latestRes, historyRes]) => {
+        if (cancelled) return
+        if (latestRes.ok) setLatest(await latestRes.json())
+        if (historyRes.ok) setHistory((await historyRes.json()).reports)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="layer-expand-body">
+        <div className="empty-hint">Loading…</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="layer-expand-body">
+      <div className="kv-row">
+        <span>Latest status</span>
+        <span className={`gov-risk-badge ${integrityRiskClass(latest?.status)}`}>{latest?.status ?? 'unknown'}</span>
+      </div>
+      {latest?.checked_at && (
+        <div className="kv-row">
+          <span>Checked at</span>
+          <span className="value-muted">{formatTimelineTime(latest.checked_at)}</span>
+        </div>
+      )}
+      {latest?.corrupted_count !== undefined && (
+        <div className="kv-row">
+          <span>Corrupted records</span>
+          <span className="value-muted">{latest.corrupted_count}</span>
+        </div>
+      )}
+      {latest?.message && <div className="empty-hint">{latest.message}</div>}
+
+      <div className="kv-row" style={{ marginTop: 8 }}>
+        <span>History</span>
+      </div>
+      {history.length === 0 && <div className="empty-hint">No checks run yet.</div>}
+      {history.map((r) => (
+        <div className="kv-row" key={r.report_id}>
+          <span>{formatTimelineTime(r.checked_at)}</span>
+          <span className={`gov-risk-badge ${integrityRiskClass(r.status)}`}>{r.status}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface OvernightReport {
+  id: string
+  task: string
+  overall_status: string
+  summary: string
+  generated_at: string
+}
+
+function overnightStatusClass(status: string): string {
+  return status === 'done' ? 'risk-low' : status === 'blocked' ? 'risk-medium' : 'risk-high'
+}
+
+function OvernightExpand() {
+  const [reports, setReports] = useState<OvernightReport[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE_URL}/overnight/reports`)
+      .then((res) => (res.ok ? res.json() : { reports: [] }))
+      .then((data) => {
+        if (!cancelled) setReports(data.reports ?? [])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="layer-expand-body">
+        <div className="empty-hint">Loading…</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="layer-expand-body">
+      {reports.length === 0 && <div className="empty-hint">No overnight runs yet.</div>}
+      {reports.map((r) => (
+        <div className="mcp-server-card" key={r.id}>
+          <div className="mcp-server-top">
+            <span className="mcp-server-name">{r.task}</span>
+            <span className={`gov-risk-badge ${overnightStatusClass(r.overall_status)}`}>{r.overall_status}</span>
+          </div>
+          <div className="value-muted" style={{ marginTop: 4 }}>
+            {r.summary}
+          </div>
+          <div className="value-muted" style={{ marginTop: 4, fontSize: 11 }}>
+            {formatTimelineTime(r.generated_at)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface SparringSession {
+  id: string
+  task: string
+  status: string
+  use_case: string
+  risk: string
+  created_at: string
+}
+
+function sparringStatusClass(status: string): string {
+  return status === 'pass' ? 'risk-low' : status === 'disputed' ? 'risk-medium' : 'risk-high'
+}
+
+function SparringExpand() {
+  const [sessions, setSessions] = useState<SparringSession[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE_URL}/sparring/history`)
+      .then((res) => (res.ok ? res.json() : { sessions: [] }))
+      .then((data) => {
+        if (!cancelled) setSessions(data.sessions ?? [])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="layer-expand-body">
+        <div className="empty-hint">Loading…</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="layer-expand-body">
+      {sessions.length === 0 && <div className="empty-hint">No sparring sessions yet.</div>}
+      {sessions.map((s) => (
+        <div className="mcp-server-card" key={s.id}>
+          <div className="mcp-server-top">
+            <span className="mcp-server-name">{s.task}</span>
+            <span className={`gov-risk-badge ${sparringStatusClass(s.status)}`}>{s.status}</span>
+          </div>
+          <div className="value-muted" style={{ marginTop: 4, fontSize: 11 }}>
+            {s.use_case} · {s.risk} risk · {formatTimelineTime(s.created_at)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   memory: 'Memory',
   skills: 'Skills',
@@ -1216,6 +1558,10 @@ const LAYER_OVERLAY_TITLE: Record<LayerId, string> = {
   llm: 'LLM',
   governance: 'Governance',
   lifecycle: 'Quality',
+  guardrails: 'Guardrails',
+  integrity: 'Memory Integrity',
+  overnight: 'Overnight Loop',
+  sparring: 'Sparring',
   mcp: 'MCP',
   integrations: 'Integrations',
 }
@@ -1297,6 +1643,34 @@ export default function LeftPanel() {
       badge: awaitingApprovalCount > 0 ? 'live' : undefined,
     },
     {
+      id: 'guardrails',
+      label: 'Guardrails',
+      status: 'Law, Contract, Trust, Budget',
+      icon: '⚖️',
+      color: 'rgba(99, 102, 241, 0.15)',
+    },
+    {
+      id: 'integrity',
+      label: 'Memory Integrity',
+      status: 'Latest health check',
+      icon: '🧬',
+      color: 'rgba(20, 184, 166, 0.15)',
+    },
+    {
+      id: 'overnight',
+      label: 'Overnight Loop',
+      status: 'Unsupervised run reports',
+      icon: '🌙',
+      color: 'rgba(79, 70, 229, 0.15)',
+    },
+    {
+      id: 'sparring',
+      label: 'Sparring',
+      status: 'Builder/Breaker/Judge sessions',
+      icon: '🥊',
+      color: 'rgba(217, 70, 239, 0.15)',
+    },
+    {
       id: 'mcp',
       label: 'MCP',
       status: pendingApprovals.length > 0 ? `⚠ ${pendingApprovals.length} pending` : 'No pending approvals',
@@ -1369,6 +1743,10 @@ export default function LeftPanel() {
                 {overlayLayer === 'llm' && <LLMExpand />}
                 {overlayLayer === 'governance' && <GovernanceExpand />}
                 {overlayLayer === 'lifecycle' && <GovernanceLifecycleExpand />}
+                {overlayLayer === 'guardrails' && <GuardrailsExpand />}
+                {overlayLayer === 'integrity' && <MemoryIntegrityExpand />}
+                {overlayLayer === 'overnight' && <OvernightExpand />}
+                {overlayLayer === 'sparring' && <SparringExpand />}
                 {overlayLayer === 'mcp' && <McpExpand />}
                 {overlayLayer === 'integrations' && <IntegrationsExpand />}
               </div>
