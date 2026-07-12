@@ -4,11 +4,23 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  padding: 16px;
-  gap: 16px;
+  padding: 12px 16px;
+  gap: 12px;
 }
 
-.app-body {
+/* Control Center: 2-col — main content + right chat panel */
+.app-body--control {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Creator / Dev: 3-col sidepanel + canvas + action */
+.app-body--creator,
+.app-body--dev {
   flex: 1;
   display: grid;
   grid-template-columns: 200px 1fr 480px;
@@ -17,35 +29,18 @@
   overflow: hidden;
 }
 
-.app-bottom {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.6fr;
-  gap: 16px;
-}
-
-.left-panel,
+/* Right panel stays as a panel card for control view */
 .right-panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow-y: auto;
   display: flex;
-  margin-top: 10px;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
+  gap: 0;
 }
 
-.center-panel {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+/* Shared panel-card */
 .panel-card {
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -58,11 +53,12 @@
 }
 
 .panel-card h3 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
-  margin: 0 0 12px;
+  margin: 0 0 10px;
+  text-transform: uppercase;
 }
 
 .kv-row {
@@ -86,4 +82,25 @@
   font-size: 12px;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+/* Legacy left-panel for overlays (now used as slide-out panel in control view) */
+.left-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.center-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

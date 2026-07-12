@@ -1,0 +1,334 @@
+.control-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── PC HEALTH STRIP ─────────────────────────────────────────────────────── */
+.pc-health-strip {
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.pc-health-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.pc-health-cards {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.health-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.health-card-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.health-card-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.health-card-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.health-card-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.health-card-sub {
+  font-size: 9px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.health-card-badge {
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.health-card-chart {
+  margin-top: 6px;
+  height: 24px;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ── BAR CHART ───────────────────────────────────────────────────────────── */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+  width: 100%;
+}
+
+.bar-chart-bar {
+  flex: 1;
+  border-radius: 2px;
+  min-height: 4px;
+  transition: background 0.3s;
+}
+
+/* ── BRAIN SECTION ───────────────────────────────────────────────────────── */
+.ctrl-brain-section {
+  flex: 1;
+  min-height: 260px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SERVICES SECTION ────────────────────────────────────────────────────── */
+.ctrl-services-section {
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.ctrl-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ctrl-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.ctrl-services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.ctrl-service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctrl-service-card.status-online {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.ctrl-service-card.status-error {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ctrl-service-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctrl-service-icon {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.ctrl-service-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ctrl-service-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctrl-service-port {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.ctrl-service-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.ctrl-service-badge.status-online {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+}
+
+.ctrl-service-badge.status-offline {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.ctrl-service-badge.status-starting,
+.ctrl-service-badge.status-restarting {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber);
+}
+
+.ctrl-service-badge.status-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+}
+
+.ctrl-service-error {
+  font-size: 10px;
+  color: var(--accent-red);
+}
+
+.ctrl-service-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.ctrl-service-actions button {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ctrl-service-actions button:hover:not(:disabled) {
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+}
+
+.ctrl-service-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── SKILLS SECTION ──────────────────────────────────────────────────────── */
+.ctrl-skills-section {
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── CORE ENGINE FAB ─────────────────────────────────────────────────────── */
+.core-engine-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 80;
+  transition: all 0.15s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.core-engine-fab:hover {
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+}
+
+.core-engine-fab-label {
+  font-size: 11px;
+}
+
+/* ── CORE ENGINE DRAWER ──────────────────────────────────────────────────── */
+.core-engine-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.core-engine-drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 95;
+  width: 260px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

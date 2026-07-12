@@ -164,7 +164,12 @@ const DECISION_LABEL: Record<LearnSuggestion['decision'], string> = {
   reject: 'Reject',
 }
 
-export default function ChatPanel() {
+interface ChatPanelProps {
+  prefillMessage?: string
+  onPrefillConsumed?: () => void
+}
+
+export default function ChatPanel({ prefillMessage, onPrefillConsumed }: ChatPanelProps = {}) {
   const { sessionId, newConversation } = useBackend()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -182,6 +187,12 @@ export default function ChatPanel() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+
+  useEffect(() => {
+    if (!prefillMessage) return
+    setInput(prefillMessage)
+    onPrefillConsumed?.()
+  }, [prefillMessage, onPrefillConsumed])
 
   useEffect(() => {
     if (!pending) return

@@ -15,77 +15,93 @@ export default function Header({ view, onViewChange }: HeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const { online, unreadNotificationCount } = useBackend()
-  const status = online ? 'online' : 'offline'
-  const inCreator = view === 'creator'
-  const inDev = view === 'dev'
-  const inLauncher = view === 'launcher'
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
 
+  const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const dateStr = time.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+
   return (
     <header className="app-header">
-      <div className="app-header-center">
-        <div className="app-header-title">
-          <span className="app-header-brand">MAT.AI</span>
-          <span className="app-header-badge">OS</span>
+      {/* LEFT: Brand */}
+      <div className="header-brand">
+        <div className="header-logo">M</div>
+        <div className="header-brand-text">
+          <div className="header-brand-name">
+            MAT.AI <span className="header-brand-os">OS</span>
+          </div>
+          <div className="header-brand-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
         </div>
-        <div className="app-header-tagline">One Brain. Infinite Skills. Autonomous Loops.</div>
       </div>
-      <div className="app-header-right">
+
+      {/* CENTER: Nav tabs */}
+      <nav className="header-nav">
         <button
           type="button"
-          className={`creator-toggle-btn ${inCreator ? 'active' : ''}`}
-          onClick={() => onViewChange(inCreator ? 'brain' : 'creator')}
-          title={inCreator ? 'Back to Brain' : 'Open Creator workspace'}
+          className={`header-nav-btn ${view === 'creator' ? 'active' : ''}`}
+          onClick={() => onViewChange('creator')}
         >
-          {inCreator ? '🏠 Home' : '🎬 Creator'}
+          <span className="header-nav-icon">&lt;/&gt;</span>
+          Creator
         </button>
         <button
           type="button"
-          className={`creator-toggle-btn ${inDev ? 'active' : ''}`}
-          onClick={() => onViewChange(inDev ? 'brain' : 'dev')}
-          title={inDev ? 'Back to Brain' : 'Open Dev workspace'}
+          className={`header-nav-btn ${view === 'dev' ? 'active' : ''}`}
+          onClick={() => onViewChange('dev')}
         >
-          {inDev ? '🏠 Home' : '🛠️ Dev'}
+          <span className="header-nav-icon">⚡</span>
+          Dev
         </button>
         <button
           type="button"
-          className={`creator-toggle-btn ${inLauncher ? 'active' : ''}`}
-          onClick={() => onViewChange(inLauncher ? 'brain' : 'launcher')}
-          title={inLauncher ? 'Back to Brain' : 'Open Control Center'}
+          className={`header-nav-btn control ${view === 'control' ? 'active' : ''}`}
+          onClick={() => onViewChange('control')}
         >
-          {inLauncher ? '🏠 Home' : '🚀 Control Center'}
+          <span className="header-nav-icon">🚀</span>
+          Control Center
         </button>
+      </nav>
+
+      {/* RIGHT: Status + Time + Actions */}
+      <div className="header-right">
+        <div className="header-status">
+          <span className={`header-status-dot ${online ? 'online' : 'offline'}`} />
+          <div className="header-status-text">
+            <span className="header-status-label">{online ? 'Online' : 'Offline'}</span>
+            <span className="header-status-sub">{online ? 'System Healthy' : 'Backend unreachable'}</span>
+          </div>
+        </div>
+
+        <div className="header-time-block">
+          <div className="header-clock">{timeStr}</div>
+          <div className="header-date">{dateStr}</div>
+        </div>
+
         <button
           type="button"
-          className="header-bell-btn"
-          onClick={() => setNotifOpen((open) => !open)}
+          className="header-action-btn"
+          onClick={() => setNotifOpen((o) => !o)}
           aria-label="Notifications"
-          title="Notifications"
         >
           🔔
-          {unreadNotificationCount > 0 && <span className="header-icon-badge">{unreadNotificationCount}</span>}
+          {unreadNotificationCount > 0 && (
+            <span className="header-action-badge">{unreadNotificationCount}</span>
+          )}
         </button>
+
         <button
           type="button"
-          className="header-bell-btn"
+          className="header-action-btn"
           onClick={() => setSettingsOpen(true)}
           aria-label="Settings"
-          title="Settings"
         >
           ⚙️
         </button>
-        <div className={`status-pill ${status}`}>
-          <span className="status-dot" />
-          {status === 'online' ? 'Online' : 'Offline'}
-        </div>
-        <div className="clock">
-          {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </div>
       </div>
+
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
       {notifOpen && <NotificationCenter onClose={() => setNotifOpen(false)} />}
     </header>
