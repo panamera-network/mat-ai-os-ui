@@ -18,6 +18,7 @@ export default function Header({ view, onViewChange }: HeaderProps) {
   const status = online ? 'online' : 'offline'
   const inCreator = view === 'creator'
   const inDev = view === 'dev'
+  const inLauncher = view === 'launcher'
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
@@ -49,6 +50,14 @@ export default function Header({ view, onViewChange }: HeaderProps) {
           title={inDev ? 'Back to Brain' : 'Open Dev workspace'}
         >
           {inDev ? '🏠 Home' : '🛠️ Dev'}
+        </button>
+        <button
+          type="button"
+          className={`creator-toggle-btn ${inLauncher ? 'active' : ''}`}
+          onClick={() => onViewChange(inLauncher ? 'brain' : 'launcher')}
+          title={inLauncher ? 'Back to Brain' : 'Open Control Center'}
+        >
+          {inLauncher ? '🏠 Home' : '🚀 Control Center'}
         </button>
         <button
           type="button"
