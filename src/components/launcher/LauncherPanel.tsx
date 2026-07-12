@@ -68,7 +68,7 @@ export default function LauncherPanel() {
     )
   }
 
-  const mobileStatus = health.mobile.status
+  const mobileStatus = health.mobile_connection.status
 
   return (
     <div className="launcher-panel">
@@ -91,7 +91,7 @@ export default function LauncherPanel() {
             <span className="launcher-health-value">{health.disk_percent.toFixed(0)}%</span>
           </div>
           <div className="launcher-health-stat">
-            <span className="launcher-health-label">Mobile</span>
+            <span className="launcher-health-label">Mobile Connection</span>
             <span className={`launcher-status-badge status-${mobileStatus === 'connected' ? 'online' : mobileStatus === 'offline' ? 'offline' : 'starting'}`}>
               {MOBILE_LABEL[mobileStatus]}
             </span>

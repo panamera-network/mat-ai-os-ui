@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { LAUNCHER_BASE_URL } from '../config'
 
-export type ServiceId = 'core' | 'engine' | 'dashboard' | 'mk1'
+export type ServiceId = 'core' | 'engine' | 'dashboard' | 'mk1' | 'mobile' | 'mk1_mobile'
 export type ServiceStatus = 'online' | 'offline' | 'starting' | 'restarting' | 'error'
-export type MobileStatus = 'waiting' | 'connected' | 'offline'
+// "Is a phone actually connected" - distinct from the "mobile"/"mk1_mobile" ServiceIds
+// above, which are just the Expo dev server processes.
+export type MobileConnectionStatus = 'waiting' | 'connected' | 'offline'
 
 export interface ServiceState {
   id: ServiceId
@@ -21,7 +23,7 @@ export interface LauncherHealth {
   ram_total: number
   disk_percent: number
   services: ServiceState[]
-  mobile: { status: MobileStatus }
+  mobile_connection: { status: MobileConnectionStatus }
 }
 
 interface LauncherState {
