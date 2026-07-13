@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react' // useState used for history buffers
 import { useBackend } from '../context/BackendContext'
 import { useLauncher, type ServiceState } from '../context/LauncherContext'
 import BrainView from './BrainView'
 import SkillsLibrary from './SkillsLibrary'
-import LeftPanel from './LeftPanel'
+import CoreEngineGrid from './CoreEngineGrid'
 import './ControlMain.css'
 
 // ── Sparkline (line chart) ──────────────────────────────────────────────────
@@ -127,8 +127,6 @@ function ServiceCard({ service }: { service: ServiceState }) {
 export default function ControlMain() {
   const { health, loops, agents } = useBackend()
   const { reachable, health: lh } = useLauncher()
-  const [coreOpen, setCoreOpen] = useState(false)
-
   // Rolling history buffers for sparklines
   const [cpuHistory, setCpuHistory] = useState<number[]>([])
   const [ramHistory, setRamHistory] = useState<number[]>([])
@@ -257,26 +255,13 @@ export default function ControlMain() {
         </section>
       )}
 
+      {/* CORE ENGINE — inline card grid, click to open modal */}
+      <CoreEngineGrid />
+
       {/* SKILLS LIBRARY */}
       <section className="ctrl-skills-section">
         <SkillsLibrary />
       </section>
-
-      {/* CORE ENGINE flyout button */}
-      <button type="button" className="core-engine-fab" onClick={() => setCoreOpen((o) => !o)} title="Core Engine">
-        <span>⚙</span>
-        <span className="core-engine-fab-label">Core Engine</span>
-      </button>
-
-      {/* Core Engine slide-over */}
-      {coreOpen && (
-        <>
-          <div className="core-engine-backdrop" onClick={() => setCoreOpen(false)} />
-          <div className="core-engine-drawer">
-            <LeftPanel />
-          </div>
-        </>
-      )}
     </main>
   )
 }

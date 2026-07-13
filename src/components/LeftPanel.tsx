@@ -1788,3 +1788,21 @@ export default function LeftPanel() {
     </aside>
   )
 }
+
+export {
+  MemoryExpand,
+  SkillsExpand,
+  AgentsExpand,
+  LoopsExpand,
+  LLMExpand,
+  GovernanceExpand,
+  GovernanceLifecycleExpand,
+  GuardrailsExpand,
+  MemoryIntegrityExpand,
+  OvernightExpand,
+  SparringExpand,
+  McpExpand,
+  IntegrationsExpand,
+  LAYER_OVERLAY_TITLE,
+}
+export type { LayerId }
