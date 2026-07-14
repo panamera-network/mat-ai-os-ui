@@ -1,72 +1,140 @@
-/* ── ASK MAT.AI HEADER ───────────────────────────────────────────────────── */
-.ask-mat-header {
-  flex-shrink: 0;
+/* ── PANEL SHELL ─────────────────────────────────────────────────────────── */
+.right-panel {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  min-height: 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 28px rgba(109,40,217,0.12), 0 0 0 1px rgba(139,92,246,0.08) inset;
 }
 
-.ask-mat-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6d28d9, #2563eb);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+.rp-header {
   flex-shrink: 0;
-}
-
-.ask-mat-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
-  flex: 1;
-}
-
-.ask-mat-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(139,92,246,0.12);
+  background: rgba(139,92,246,0.05);
 }
 
-.ask-mat-icon-btn {
+.rp-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(109,40,217,0.6), rgba(37,99,235,0.6));
+  border: 1px solid rgba(139,92,246,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(109,40,217,0.35);
+}
+
+.rp-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.rp-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.rp-status {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.rp-status.online {
+  color: var(--accent-green);
+}
+
+/* ── WAVEFORM ────────────────────────────────────────────────────────────── */
+.rp-waveform {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.rp-wave-bar {
+  display: inline-block;
+  width: 2.5px;
+  height: var(--base, 4px);
+  border-radius: 2px;
+  background: rgba(139,92,246,0.35);
+  transition: background 0.3s;
+}
+
+.rp-waveform.active .rp-wave-bar {
+  background: #a78bfa;
+  animation: wave-bounce 1s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.07s);
+}
+
+@keyframes wave-bounce {
+  0%, 100% { height: 3px; opacity: 0.5; }
+  50%       { height: var(--base, 4px); opacity: 1; }
+}
+
+/* ── HEADER ACTIONS ──────────────────────────────────────────────────────── */
+.rp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rp-icon-btn {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: none;
-  font-size: 14px;
+  width: 26px;
+  height: 26px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 13px;
   cursor: pointer;
-  padding: 0;
   color: var(--text-secondary);
-  transition: color 0.15s;
+  transition: all 0.15s;
+  padding: 0;
 }
 
-.ask-mat-icon-btn:hover {
+.rp-icon-btn:hover {
+  background: rgba(139,92,246,0.15);
+  border-color: rgba(139,92,246,0.4);
   color: var(--text-primary);
 }
 
-.ask-mat-icon-btn.pulsing {
+.rp-icon-btn.pulsing {
   animation: icon-pulse 1s ease-in-out infinite;
 }
 
 @keyframes icon-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50%       { opacity: 0.5; }
 }
 
-.ask-mat-badge {
+.rp-badge {
   position: absolute;
   top: -4px;
-  right: -5px;
+  right: -4px;
   min-width: 13px;
   height: 13px;
   padding: 0 2px;
@@ -79,31 +147,23 @@
   background: var(--accent-red);
   border-radius: 7px;
   line-height: 1;
+  box-shadow: 0 0 6px rgba(239,68,68,0.5);
 }
 
-.telegram-status-dot {
+.rp-telegram {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--text-secondary);
+  background: var(--border);
   flex-shrink: 0;
 }
 
-.telegram-status-dot.telegram-online {
-  background: var(--accent-green);
-  box-shadow: 0 0 6px var(--accent-green);
-}
-
-.telegram-status-dot.telegram-offline {
-  background: var(--accent-red);
-}
-
-.telegram-status-dot.telegram-disabled {
-  background: var(--border);
-}
+.rp-telegram.telegram-online  { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+.rp-telegram.telegram-offline  { background: var(--accent-red); }
+.rp-telegram.telegram-disabled { background: var(--border); }
 
 /* ── CHAT AREA ───────────────────────────────────────────────────────────── */
-.ask-mat-chat {
+.rp-chat {
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -112,39 +172,125 @@
 }
 
 /* ── QUICK CHIPS ─────────────────────────────────────────────────────────── */
-.quick-chips {
+.rp-chips {
   flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   padding: 8px 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(139,92,246,0.1);
 }
 
-.quick-chip {
+.rp-chip {
   font-size: 10px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
+  border: 1px solid rgba(139,92,246,0.2);
+  background: rgba(139,92,246,0.06);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 
-.quick-chip:hover {
-  border-color: var(--accent-purple);
-  color: var(--text-primary);
-  background: rgba(139, 92, 246, 0.1);
+.rp-chip:hover {
+  border-color: rgba(139,92,246,0.5);
+  color: #c4b5fd;
+  background: rgba(139,92,246,0.12);
+  box-shadow: 0 0 10px rgba(109,40,217,0.15);
 }
 
-/* ── RIGHT SECTIONS ──────────────────────────────────────────────────────── */
-.right-section {
+/* ── TOOLBAR ─────────────────────────────────────────────────────────────── */
+.rp-toolbar {
   flex-shrink: 0;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(139,92,246,0.1);
+  background: rgba(139,92,246,0.03);
+}
+
+.rp-toolbar-group {
+  display: flex;
+  gap: 3px;
+}
+
+.rp-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(139,92,246,0.2);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.rp-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(139,92,246,0.15);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.rp-tool-btn:hover {
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.4);
+  color: #c4b5fd;
+  box-shadow: 0 0 10px rgba(109,40,217,0.15);
+}
+
+.rp-tool-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.rp-tool-label {
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ── MODEL PILL ──────────────────────────────────────────────────────────── */
+.rp-model-pill {
+  flex-shrink: 0;
+  margin: 6px 12px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #a78bfa;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 10px;
+  padding: 4px 10px;
+}
+
+.rp-model-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 6px #a78bfa;
+}
+
+/* ── LEGACY — kept for overlays ──────────────────────────────────────────── */
+.header-icon-badge {
+  position: absolute;
+  top: -5px; right: -7px;
+  min-width: 14px; height: 14px;
+  padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  color: #fff; background: var(--accent-red);
+  border-radius: 8px; line-height: 1;
 }
 
 .right-section-title {
@@ -160,219 +306,9 @@
 }
 
 .right-section-link {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 9px; font-weight: 600;
   color: var(--accent-purple);
-  background: none;
-  border: none;
-  cursor: pointer;
-  letter-spacing: 0;
-  padding: 0;
-  text-transform: none;
+  background: none; border: none;
+  cursor: pointer; letter-spacing: 0;
+  padding: 0; text-transform: none;
 }
-
-.right-section-badge {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--text-secondary);
-}
-
-.right-section-badge.active {
-  color: var(--accent-green);
-}
-
-.right-empty {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-/* ── LOOPS ───────────────────────────────────────────────────────────────── */
-.right-loops-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.right-loop-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.right-loop-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.right-loop-name {
-  flex: 1;
-  font-size: 11px;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.right-loop-status {
-  font-size: 10px;
-  font-weight: 600;
-}
-
-/* ── PROGRESS BARS ───────────────────────────────────────────────────────── */
-.right-progress-bar {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.right-progress-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.right-progress-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.right-progress-sub {
-  font-weight: 400;
-  font-size: 10px;
-  color: var(--text-secondary);
-}
-
-/* ── QUICK TOOLS ─────────────────────────────────────────────────────────── */
-.quick-tools-row {
-  display: flex;
-  gap: 6px;
-  justify-content: space-between;
-}
-
-.quick-tool-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.quick-tool-btn:hover {
-  border-color: var(--accent-purple);
-  background: rgba(139, 92, 246, 0.1);
-}
-
-.quick-tool-icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.quick-tool-label {
-  font-size: 8px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: center;
-  line-height: 1.2;
-}
-
-/* ── MODEL PILL ──────────────────────────────────────────────────────────── */
-.right-model-pill {
-  flex-shrink: 0;
-  margin: 6px 14px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  color: var(--accent-purple);
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 10px;
-  padding: 4px 10px;
-}
-
-.right-model-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent-purple);
-  box-shadow: 0 0 6px var(--accent-purple);
-}
-
-/* Legacy classes kept for queue/suggestions/goals overlays */
-.header-icon-badge {
-  position: absolute;
-  top: -5px;
-  right: -7px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--accent-red);
-  border-radius: 8px;
-  line-height: 1;
-}
-
-.model-pill {
-  font-size: 11px;
-  color: var(--accent-purple);
-  background: rgba(139, 92, 246, 0.12);
-  border: 1px solid var(--accent-purple);
-  border-radius: 10px;
-  padding: 2px 8px;
-}
-
-.header-icon-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0;
-}
-
-.queue-icon.running {
-  animation: right-panel-icon-pulse 1s ease-in-out infinite;
-}
-
-@keyframes right-panel-icon-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.telegram-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: 12px;
-  border-radius: 50%;
-}
-
-.telegram-icon.telegram-online { color: var(--accent-green); }
-.telegram-icon.telegram-disabled { color: var(--text-secondary); opacity: 0.6; }
-.telegram-icon.telegram-offline { color: var(--accent-red); }

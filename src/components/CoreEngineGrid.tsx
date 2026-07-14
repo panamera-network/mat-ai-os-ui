@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useBackend } from '../context/BackendContext'
-import { useMcpApprovals } from '../hooks/useMcpApprovals'
 import { useGovernanceLifecycle } from '../hooks/useGovernanceLifecycle'
 import {
   MemoryExpand,
@@ -12,10 +11,6 @@ import {
   GovernanceLifecycleExpand,
   GuardrailsExpand,
   MemoryIntegrityExpand,
-  OvernightExpand,
-  SparringExpand,
-  McpExpand,
-  IntegrationsExpand,
   LAYER_OVERLAY_TITLE,
   type LayerId,
 } from './LeftPanel'
@@ -27,7 +22,7 @@ interface CoreLayer {
   status: string
   icon: string
   color: string
-  badge?: 'live' | 'soon'
+  badge?: 'live'
   badgeCount?: number
 }
 
@@ -35,15 +30,8 @@ const POLL_MS = 5000
 
 export default function CoreEngineGrid() {
   const { health, online, loops } = useBackend()
-  const { pending: pendingApprovals, refresh: refreshApprovals } = useMcpApprovals()
   const { awaitingApprovalCount, refresh: refreshLifecycle } = useGovernanceLifecycle()
   const [openLayer, setOpenLayer] = useState<LayerId | null>(null)
-
-  useEffect(() => {
-    refreshApprovals()
-    const id = setInterval(refreshApprovals, POLL_MS)
-    return () => clearInterval(id)
-  }, [refreshApprovals])
 
   useEffect(() => {
     refreshLifecycle()
@@ -59,7 +47,7 @@ export default function CoreEngineGrid() {
       label: 'Memory',
       status: online ? 'Connected' : 'Idle',
       icon: '🧠',
-      color: 'rgba(139, 92, 246, 0.15)',
+      color: '#8b5cf6',
       badge: 'live',
     },
     {
@@ -67,16 +55,16 @@ export default function CoreEngineGrid() {
       label: 'Skills',
       status: health ? `${health.skills_count} loaded` : '—',
       icon: '⚡',
-      color: 'rgba(59, 130, 246, 0.15)',
+      color: '#3b82f6',
     },
     {
       id: 'agents',
       label: 'Agents',
       status: health
-        ? `${health.active_agents_count} active / ${health.agents_count} total`
+        ? `${health.active_agents_count} active`
         : 'Idle',
       icon: '🤖',
-      color: 'rgba(34, 197, 94, 0.15)',
+      color: '#22c55e',
       badge: 'live',
     },
     {
@@ -84,16 +72,16 @@ export default function CoreEngineGrid() {
       label: 'Loops',
       status: activeLoopsCount > 0 ? `${activeLoopsCount} running` : 'None active',
       icon: '🔁',
-      color: 'rgba(245, 158, 11, 0.15)',
+      color: '#f59e0b',
     },
     {
       id: 'llm',
       label: 'LLM',
       status: health?.active_model
-        ? `${health.active_model.provider} · ${health.active_model.model}`
-        : '—',
+        ? `${health.active_model.provider}`
+        : 'Idle',
       icon: '🖥️',
-      color: 'rgba(6, 182, 212, 0.15)',
+      color: '#06b6d4',
       badge: 'live',
     },
     {
@@ -101,101 +89,80 @@ export default function CoreEngineGrid() {
       label: 'Governance',
       status: 'Active',
       icon: '🛡️',
-      color: 'rgba(139, 92, 246, 0.15)',
+      color: '#8b5cf6',
       badge: 'live',
     },
     {
       id: 'lifecycle',
       label: 'Quality',
-      status:
-        awaitingApprovalCount > 0
-          ? `${awaitingApprovalCount} awaiting approval`
-          : 'No open cases',
+      status: awaitingApprovalCount > 0 ? `${awaitingApprovalCount} awaiting` : 'Clear',
       icon: '🩺',
-      color: 'rgba(236, 72, 153, 0.15)',
+      color: '#ec4899',
       badge: awaitingApprovalCount > 0 ? 'live' : undefined,
       badgeCount: awaitingApprovalCount > 0 ? awaitingApprovalCount : undefined,
     },
     {
       id: 'guardrails',
       label: 'Guardrails',
-      status: 'Law · Contract · Trust · Budget',
+      status: 'Law · Trust',
       icon: '⚖️',
-      color: 'rgba(99, 102, 241, 0.15)',
+      color: '#6366f1',
     },
     {
       id: 'integrity',
-      label: 'Memory Integrity',
-      status: 'Latest health check',
+      label: 'Integrity',
+      status: 'Memory health',
       icon: '🧬',
-      color: 'rgba(20, 184, 166, 0.15)',
-    },
-    {
-      id: 'overnight',
-      label: 'Overnight',
-      status: 'Unsupervised run reports',
-      icon: '🌙',
-      color: 'rgba(79, 70, 229, 0.15)',
-    },
-    {
-      id: 'sparring',
-      label: 'Sparring',
-      status: 'Builder · Breaker · Judge',
-      icon: '🥊',
-      color: 'rgba(217, 70, 239, 0.15)',
-    },
-    {
-      id: 'mcp',
-      label: 'MCP',
-      status:
-        pendingApprovals.length > 0
-          ? `${pendingApprovals.length} pending`
-          : 'No pending approvals',
-      icon: '🔌',
-      color: 'rgba(239, 68, 68, 0.15)',
-      badge: pendingApprovals.length > 0 ? 'live' : undefined,
-      badgeCount: pendingApprovals.length > 0 ? pendingApprovals.length : undefined,
-    },
-    {
-      id: 'integrations',
-      label: 'Integrations',
-      status: 'Web · Calendar · Email · MT5',
-      icon: '🧩',
-      color: 'rgba(16, 185, 129, 0.15)',
+      color: '#14b8a6',
     },
   ]
 
+  const expandMap: Partial<Record<LayerId, React.ReactNode>> = {
+    memory:     <MemoryExpand />,
+    skills:     <SkillsExpand />,
+    agents:     <AgentsExpand />,
+    loops:      <LoopsExpand />,
+    llm:        <LLMExpand />,
+    governance: <GovernanceExpand />,
+    lifecycle:  <GovernanceLifecycleExpand />,
+    guardrails: <GuardrailsExpand />,
+    integrity:  <MemoryIntegrityExpand />,
+  }
+
   return (
     <>
-      <section className="core-engine-grid-section">
-        <div className="core-engine-grid-header">
-          <span className="core-engine-grid-title">CORE ENGINE</span>
+      <div className="ce-panel">
+        <div className="ce-panel-header">
+          <span className="ce-panel-title">CORE ENGINE</span>
+          <span className="ce-panel-sub">{online ? 'Online' : 'Offline'}</span>
         </div>
-        <div className="core-engine-grid">
+        <div className="ce-grid">
           {layers.map((layer) => (
             <button
               key={layer.id}
               type="button"
               className={`ce-card ${openLayer === layer.id ? 'active' : ''}`}
-              style={{ '--ce-card-color': layer.color } as React.CSSProperties}
               onClick={() => setOpenLayer(layer.id)}
             >
-              <div className="ce-card-top">
-                <span className="ce-card-icon" style={{ background: layer.color }}>
-                  {layer.icon}
-                </span>
-                {layer.badgeCount !== undefined ? (
-                  <span className="ce-card-count">{layer.badgeCount}</span>
-                ) : layer.badge === 'live' ? (
-                  <span className="ce-card-live-dot" />
-                ) : null}
+              <span className="ce-card-icon" style={{ background: `${layer.color}22`, color: layer.color }}>
+                {layer.icon}
+              </span>
+              <div className="ce-card-body">
+                <span className="ce-card-label">{layer.label}</span>
+                <span className="ce-card-status">{layer.status}</span>
               </div>
-              <div className="ce-card-label">{layer.label}</div>
-              <div className="ce-card-status">{layer.status}</div>
+              <div className="ce-card-right">
+                {layer.badgeCount !== undefined
+                  ? <span className="ce-badge-count">{layer.badgeCount}</span>
+                  : layer.badge === 'live'
+                    ? <span className="ce-badge-dot" />
+                    : null}
+                <span className="ce-card-chevron">›</span>
+              </div>
             </button>
           ))}
         </div>
-      </section>
+      </div>
 
       {openLayer && (
         <>
@@ -203,30 +170,9 @@ export default function CoreEngineGrid() {
           <div className="ce-modal">
             <div className="ce-modal-header">
               <span className="ce-modal-title">{LAYER_OVERLAY_TITLE[openLayer]}</span>
-              <button
-                type="button"
-                className="ce-modal-close"
-                onClick={() => setOpenLayer(null)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
+              <button type="button" className="ce-modal-close" onClick={() => setOpenLayer(null)} aria-label="Close">✕</button>
             </div>
-            <div className="ce-modal-body">
-              {openLayer === 'memory' && <MemoryExpand />}
-              {openLayer === 'skills' && <SkillsExpand />}
-              {openLayer === 'agents' && <AgentsExpand />}
-              {openLayer === 'loops' && <LoopsExpand />}
-              {openLayer === 'llm' && <LLMExpand />}
-              {openLayer === 'governance' && <GovernanceExpand />}
-              {openLayer === 'lifecycle' && <GovernanceLifecycleExpand />}
-              {openLayer === 'guardrails' && <GuardrailsExpand />}
-              {openLayer === 'integrity' && <MemoryIntegrityExpand />}
-              {openLayer === 'overnight' && <OvernightExpand />}
-              {openLayer === 'sparring' && <SparringExpand />}
-              {openLayer === 'mcp' && <McpExpand />}
-              {openLayer === 'integrations' && <IntegrationsExpand />}
-            </div>
+            <div className="ce-modal-body">{expandMap[openLayer]}</div>
           </div>
         </>
       )}

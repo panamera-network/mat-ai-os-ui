@@ -21,6 +21,9 @@ export interface LauncherHealth {
   ram_percent: number
   ram_used: number
   ram_total: number
+  swap_percent: number
+  swap_used: number
+  swap_total: number
   disk_percent: number
   services: ServiceState[]
   mobile_connection: { status: MobileConnectionStatus }

@@ -726,7 +726,41 @@ export default function ChatPanel({ prefillMessage, onPrefillConsumed }: ChatPan
         </div>
       )}
 
+      {/* Media toolbar above input */}
+      <div className="chat-media-toolbar">
+        <button type="button" className="chat-media-btn" onClick={() => fileInputRef.current?.click()} title="Attach file">
+          <span>📎</span> Attach
+        </button>
+        <button type="button" className={`chat-media-btn ${isRecording ? 'active' : ''}`} onClick={toggleRecording} title="Voice">
+          <span>🎤</span> Voice
+        </button>
+        <button type="button" className="chat-media-btn" title="Vision">
+          <span>👁</span> Vision
+        </button>
+<button type="button" className={`chat-media-btn ${activeMode === 'learn' ? 'active' : ''}`} onClick={() => setActiveMode(activeMode === 'learn' ? 'chat' : 'learn')} title="Learn mode">
+          <span>🧠</span> Learn
+        </button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_ATTACHMENT_EXTENSIONS.join(',')}
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          handleFilePicked(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+
       <div className="chat-input-row">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+          placeholder="Ask anything..."
+          disabled={pending}
+        />
         {modePickerOpen && (
           <div className="mode-picker">
             {INTERFACE_MODES.map((mode) => (
@@ -745,52 +779,7 @@ export default function ChatPanel({ prefillMessage, onPrefillConsumed }: ChatPan
             ))}
           </div>
         )}
-        <button
-          type="button"
-          className="mode-toggle-btn"
-          onClick={() => setModePickerOpen((open) => !open)}
-          aria-label="Choose interface mode"
-        >
-          +
-        </button>
-        <button
-          type="button"
-          className="attach-toggle-btn"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Attach file"
-          title="Attach a file"
-          disabled={pending}
-        >
-          📎
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_ATTACHMENT_EXTENSIONS.join(',')}
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            handleFilePicked(e.target.files?.[0])
-            e.target.value = ''
-          }}
-        />
-        <button
-          type="button"
-          className={`mic-toggle-btn ${isRecording ? 'recording' : ''}`}
-          onClick={toggleRecording}
-          aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
-          title={isRecording ? 'Stop recording' : 'Record voice message'}
-          disabled={pending || isTranscribing}
-        >
-          {isTranscribing ? '…' : isRecording ? '⏹️' : '🎤'}
-        </button>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder={activeMode === 'learn' ? 'Enter URL, GitHub repo, or idea...' : 'Ask MAT.AI anything...'}
-          disabled={pending}
-        />
-        <button onClick={send} disabled={pending}>
+        <button className="chat-send-btn" onClick={send} disabled={pending}>
           ➤
         </button>
       </div>
