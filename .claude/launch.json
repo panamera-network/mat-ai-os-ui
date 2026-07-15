@@ -5,7 +5,8 @@
       "name": "vite",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 7777
+      "port": 7777,
+      "autoPort": true
     }
   ]
 }
